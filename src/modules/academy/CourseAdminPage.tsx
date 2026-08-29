@@ -1,4 +1,5 @@
-import { FormEvent, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
 import { supabase } from '../../lib/supabase'
 import type { Course } from './academy'
 
@@ -54,7 +55,7 @@ export default function CourseAdminPage() {
         {message && <div className="system-notice">{message}</div>}
         <div className="form-actions"><button className="primary-button" disabled={saving}>{saving ? 'Salvando…' : editingId ? 'Salvar alterações' : 'Criar curso'}</button>{editingId && <button type="button" className="secondary-button" onClick={reset}>Cancelar</button>}</div>
       </form>
-      <section className="panel"><div className="panel-head"><div><p className="eyebrow">CATÁLOGO</p><h3>Cursos cadastrados</h3></div></div>{courses.length === 0 ? <div className="state-card">Nenhum curso cadastrado.</div> : <div className="admin-list">{courses.map(course => <div className="admin-list-item" key={course.id}><div><strong>{course.title}</strong><span>{course.status || 'Sem status'}{course.workload_hours ? ` · ${course.workload_hours}h` : ''}</span></div><div className="row-actions"><button onClick={() => edit(course)}>Editar</button><button onClick={() => void remove(course.id)}>Excluir</button></div></div>)}</div>}</section>
+      <section className="panel"><div className="panel-head"><div><p className="eyebrow">CATÁLOGO</p><h3>Cursos cadastrados</h3></div></div>{courses.length === 0 ? <div className="state-card">Nenhum curso cadastrado.</div> : <div className="admin-list">{courses.map(course => <div className="admin-list-item" key={course.id}><div><strong>{course.title}</strong><span>{course.status || 'Sem status'}{course.workload_hours ? ` · ${course.workload_hours}h` : ''}</span></div><div className="row-actions"><button type="button" onClick={() => edit(course)}>Editar</button><button type="button" onClick={() => void remove(course.id)}>Excluir</button></div></div>)}</div>}</section>
     </div>
   </section>
 }
