@@ -37,6 +37,43 @@ function communities(){return'<section><div class="flex justify-between items-ce
 function notes(){return'<section><h1 class="text-3xl font-black mb-5">Notificações</h1><div class="card rounded-3xl divide-y">'+(S.notes.length?S.notes.map(function(n){return'<div class="p-5"><b>'+esc(n.message)+'</b><div class="text-xs text-slate-500 mt-1">'+ago(n.created_at)+'</div></div>'}).join(''):'<div class="p-10 text-center text-slate-500">Nenhuma notificação.</div>')+'</div></section>'}
 function messages(){return'<section><h1 class="text-3xl font-black">Mensagens</h1><div class="card rounded-3xl p-10 text-center mt-5"><div class="mx-auto w-16 h-16 rounded-3xl bg-slate-100 grid place-items-center">'+svg('message')+'</div><h2 class="font-black text-xl mt-4">Conversas privadas</h2><p class="text-slate-500 mt-2">A infraestrutura segura de mensagens está pronta para evoluir para conversas individuais e grupos.</p></div></section>'}
 function saved(){var x=S.posts.filter(function(p){return S.saved.has(p.id)});return'<section><h1 class="text-3xl font-black mb-5">Salvos</h1><div class="space-y-4">'+(x.length?x.map(post).join(''):'<div class="card rounded-3xl p-10 text-center text-slate-500">Você ainda não salvou publicações.</div>')+'</div></section>'}
+async function openProfile(id){
+  if(!id)return;
+  try{
+    var r=await db.from('social_profiles').select('*').eq('id',id).maybeSingle();
+    if(r.error)throw new Error(r.error.message);
+    if(!r.data){toast('Perfil não encontrado.',true);return}
+    var p=r.data, isMe=S.user&&S.user.id===id, following=!isMe&&S.following.has(id);
+    var fc=await db.from('social_follows').select('*',{count:'exact',head:true}).eq('following_id',id);
+    var fg=await db.from('social_follows').select('*',{count:'exact',head:true}).eq('follower_id',id);
+    var followers=fc.count||0, followingCount=fg.count||0;
+    var cover=p.cover_url?'<img src="'+esc(p.cover_url)+'" class="w-full h-32 object-cover">':'<div class="h-32 brand"></div>';
+    document.getElementById('modal').innerHTML='<div class="fixed inset-0 z-[80] modal grid place-items-center p-4" onclick="if(event.target===this)close()"><div class="bg-white w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl">'+cover+'<div class="p-5"><div class="-mt-14 flex items-end justify-between"><img src="'+av(p)+'" class="w-24 h-24 rounded-3xl border-4 border-white object-cover"><div class="flex gap-2">'+(isMe?'<button onclick="go(\'profile\');close()" class="px-4 py-2.5 bg-slate-100 rounded-xl font-bold">Meu perfil</button>':'<button id="followProfileBtn" onclick="toggleFollow(\''+id+'\')" class="px-5 py-2.5 '+(following?'bg-slate-100 text-slate-700':'bg-[#07111f] text-white')+' rounded-xl font-bold">'+(following?'Seguindo':'Seguir')+'</button>')+'</div></div><h2 class="text-2xl font-black mt-3">'+esc(p.display_name||'Usuário')+'</h2><div class="text-sm text-slate-500">@'+esc(p.username||'usuario')+(p.city?' · '+esc(p.city)+'/'+esc(p.state||''):'')+'</div><p class="mt-3 whitespace-pre-wrap">'+esc(p.bio||'')+'</p><div class="flex gap-6 mt-4 text-sm"><b>'+followers+' <span class="font-normal">seguidores</span></b><b>'+followingCount+' <span class="font-normal">seguindo</span></b></div></div></div></div>';
+  }catch(e){toast('Não foi possível abrir o perfil: '+(e.message||e),true)}
+}
+async function toggleFollow(id){
+  if(!S.user){auth();return}
+  if(S.user.id===id)return;
+  var btn=document.getElementById('followProfileBtn');
+  if(btn){btn.disabled=true}
+  try{
+    var isFollowing=S.following.has(id);
+    if(isFollowing){
+      var d=await db.from('social_follows').delete().eq('follower_id',S.user.id).eq('following_id',id);
+      if(d.error)throw new Error(d.error.message);
+      S.following.delete(id);
+      toast('Você deixou de seguir este perfil.');
+    }else{
+      var i=await db.from('social_follows').insert({follower_id:S.user.id,following_id:id});
+      if(i.error)throw new Error(i.error.message);
+      S.following.add(id);
+      toast('Agora você está seguindo este perfil.');
+      await db.from('social_notifications').insert({user_id:id,type:'follow',message:(S.profile.display_name||'Alguém')+' começou a seguir você.'});
+    }
+    var p=await db.from('social_profiles').select('*').eq('id',id).maybeSingle();
+    if(p.data){var fc=await db.from('social_follows').select('*',{count:'exact',head:true}).eq('following_id',id);var fg=await db.from('social_follows').select('*',{count:'exact',head:true}).eq('follower_id',id);var f=S.following.has(id);var b=document.getElementById('followProfileBtn');if(b){b.disabled=false;b.textContent=f?'Seguindo':'Seguir';b.className='px-5 py-2.5 '+(f?'bg-slate-100 text-slate-700':'bg-[#07111f] text-white')+' rounded-xl font-bold'}}
+  }catch(e){if(btn)btn.disabled=false;toast('Não foi possível alterar o seguimento: '+(e.message||e),true)}
+}
 function profile(){var cover=S.profile&&S.profile.cover_url?'<img src="'+esc(S.profile.cover_url)+'" class="w-full h-40 object-cover">':'<div class="h-40 brand"></div>';return'<section><div class="card rounded-3xl overflow-hidden">'+cover+'<div class="p-5"><div class="-mt-16 flex justify-between items-end"><img src="'+av(S.profile)+'" class="w-28 h-28 rounded-3xl border-4 border-white object-cover"><button onclick="editProfile()" class="px-4 py-2.5 bg-slate-100 rounded-xl font-bold">Editar perfil</button></div><h1 class="text-2xl font-black mt-3">'+esc(S.profile.display_name)+'</h1><div class="text-sm text-slate-500">@'+esc(S.profile.username||'usuario')+(S.profile.city?' · '+esc(S.profile.city)+'/'+esc(S.profile.state||''):'')+'</div><p class="mt-3 whitespace-pre-wrap">'+esc(S.profile.bio||'')+'</p><div class="flex gap-6 mt-4 text-sm"><b>'+(S.profile.followers_count||0)+' <span class="font-normal">seguidores</span></b><b>'+(S.profile.following_count||0)+' <span class="font-normal">seguindo</span></b></div></div></div><h2 class="font-black text-xl mt-6 mb-3">Minhas publicações</h2><div id="feed" class="space-y-4"></div></section>'}
 function settings(){return'<section><h1 class="text-3xl font-black mb-5">Configurações</h1><div class="card rounded-3xl p-5"><h3 class="font-black">Conta</h3><p class="text-sm text-slate-500 mt-1">'+esc(S.user&&S.user.email)+'</p><button onclick="logout()" class="mt-4 px-4 py-3 bg-red-50 text-red-600 rounded-xl font-bold">Sair</button></div><div class="card rounded-3xl p-5 mt-4"><h3 class="font-black">Código de comunidade</h3><p class="text-sm text-slate-500 mt-2">Não incentivamos direção perigosa, rachas, perseguições, violência ou exposição indevida. Denuncie conteúdo que coloque pessoas em risco.</p></div></section>'}
 function render(){var views={home:home,search:explore,users:communities,bell:notes,message:messages,bookmark:saved,profile:profile,settings:settings,create:home};document.getElementById('main').innerHTML=(views[S.tab]||home)();var f=document.getElementById('feed');if(f){var list=S.posts;if(S.tab==='profile')list=list.filter(function(p){return p.author_id===S.user.id});f.innerHTML=list.length?list.map(post).join(''):'<div class="card rounded-3xl p-10 text-center text-slate-500">Nenhuma publicação encontrada.</div>'}}
