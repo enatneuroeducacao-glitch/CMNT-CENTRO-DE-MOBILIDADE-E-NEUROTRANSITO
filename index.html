@@ -19,7 +19,7 @@ let db=null;function bootError(e){var a=document.getElementById('app');if(a)a.in
 const S={tab:'home',user:null,profile:null,posts:[],communities:[],notes:[],following:new Set(),saved:new Set(),likes:new Set(),search:''};
 
 function esc(v){return String(v||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]})}
-function av(p){return p&&p.avatar_url?p.avatar_url:'https://api.dicebear.com/9.x/initials/svg?seed='+encodeURIComponent((p&&p.display_name)||'FT')}
+function av(p){return p&&p.avatar_url?p.avatar_url:'https://api.dicebear.com/9.x/initials/svg?seed='+encodeURIComponent((p&&p.display_name)||'ENAT')}
 function ago(d){var n=(Date.now()-new Date(d).getTime())/1000;if(n<60)return'agora';if(n<3600)return Math.floor(n/60)+' min';if(n<86400)return Math.floor(n/3600)+' h';if(n<604800)return Math.floor(n/86400)+' d';return new Date(d).toLocaleDateString('pt-BR')}
 function toast(t,err){var x=document.createElement('div');x.className='px-4 py-3 rounded-2xl text-sm font-bold shadow-xl '+(err?'bg-red-600 text-white':'bg-[#07111f] text-white');x.textContent=t;document.getElementById('toast').appendChild(x);setTimeout(function(){x.remove()},3000)}
 function close(){document.getElementById('modal').innerHTML=''}
