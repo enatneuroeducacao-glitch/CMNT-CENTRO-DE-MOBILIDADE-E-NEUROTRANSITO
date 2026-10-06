@@ -139,5 +139,5 @@ async function saveProfile(){if(!S.user)return auth();var btn=document.getElemen
 async function init(){if(!db)return;try{var s=await db.auth.getSession();S.user=s.data.session?s.data.session.user:null;if(S.user){S.profile=await ensureProfile();if(!S.profile)throw new Error('Não foi possível criar o perfil do usuário autenticado.');var f=await db.from('social_follows').select('following_id').eq('follower_id',S.user.id);S.following=new Set((f.data||[]).map(function(x){return x.following_id}))}else S.profile={display_name:'Visitante',username:'visitante'};await load();shell()}catch(e){console.error(e);bootError(e)}}
 if(db){db.auth.onAuthStateChange(function(){setTimeout(init,0)});init()}
 </script>
-</body>
+<script src="cmnt-scientific.js"></script>\n</body>
 </html>
