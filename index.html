@@ -411,12 +411,54 @@ const HSI_DOTH_P=[
  ["psychocomportamental","Psicocomportamental","Depois de um erro, procuro aprender com o ocorrido em vez de apenas justificar minha conduta."]
 ];
 function cmntBlock(title,body){return'<article class="card rounded-3xl p-5"><h3 class="text-lg font-black">'+esc(title)+'</h3><p class="text-slate-600 mt-2 leading-7 whitespace-pre-wrap">'+esc(body)+'</p></article>'}
+function cmntDynamicCard(title,body,meta){return'<article class="card rounded-3xl p-5"><div class="flex justify-between gap-3 items-start"><div><h3 class="text-lg font-black">'+esc(title)+'</h3><p class="text-slate-600 mt-2 leading-7 whitespace-pre-wrap">'+esc(body||'')+'</p></div>'+(meta?'<span class="shrink-0 text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg">'+esc(meta)+'</span>':'')+'</div></article>'}
+async function loadCmntData(key){
+ var box=document.getElementById('cmntData');if(!box)return;
+ var q=null;
+ if(key==="research_lab")q=db.from('cmnt_research_projects').select('id,title,abstract,study_type,status,ethics_status,updated_at').neq('status','archived').order('updated_at',{ascending:false}).limit(20);
+ else if(key==="researcher")q=db.from('cmnt_researcher_profiles').select('user_id,professional_summary,scientific_bio,research_areas,institutions,researcher_status,verification_status,orcid,lattes_url').order('updated_at',{ascending:false}).limit(20);
+ else if(key==="evidence")q=db.from('cmnt_scientific_sources').select('id,title,source_type,authors,journal,publication_year,doi,evidence_level,review_status,url,abstract').neq('review_status','rejected').order('publication_year',{ascending:false}).limit(30);
+ else if(key==="academy")q=db.from('enat_courses').select('id,name,code,nature,modality,summary,category,hours,slug,thumbnail_url').eq('active',true).eq('published',true).order('name').limit(20);
+ else if(key==="observatory")q=db.from('cmnt_observatory_indicators').select('id,code,name,description,unit,source_domain,public_level').eq('active',true).order('name');
+ else if(key==="events")q=db.from('cmnt_events').select('id,title,description,event_type,starts_at,ends_at,location,online_url,status,published').eq('published',true).order('starts_at',{ascending:true}).limit(30);
+ else if(key==="editorial")q=db.from('cmnt_editorial_articles').select('id,title,summary,body,article_type,published_at,slug').eq('status','published').order('published_at',{ascending:false}).limit(20);
+ else if(key==="scientific_communities")q=db.from('cmnt_community_templates').select('id,name,purpose,scope,active').eq('active',true).order('name');
+ else if(key==="institutions")q=db.from('cmnt_institutions').select('id,name,acronym,institution_type,country,state,city,website,description,verified').order('name').limit(30);
+ else if(key==="governance")q=db.from('cmnt_national_partnerships').select('id,name,partnership_type,scope,status,contact_notes').order('name').limit(30);
+ else if(key==="knowledge_base")q=db.from('cmnt_knowledge_items').select('id,title,summary,item_type,related_competencies,updated_at').eq('status','published').order('updated_at',{ascending:false}).limit(30);
+ else if(key==="integrations")q=db.from('cmnt_integration_links').select('id,source_system,source_record_id,target_type,target_record_id,relation_type,metadata,created_at').order('created_at',{ascending:false}).limit(50);
+ else if(key==="scientific_ai")q=db.from('cmnt_ai_interactions').select('id,context_type,input_summary,output_summary,source_count,human_review_required,reviewed,created_at').eq('reviewed',true).order('created_at',{ascending:false}).limit(20);
+ else return;
+ var r=await q;if(r.error){box.innerHTML='<div class="card rounded-3xl p-5 bg-red-50 text-red-700"><b>Não foi possível carregar este módulo.</b><p class="mt-2 text-sm">'+esc(r.error.message)+'</p></div>';return}
+ var rows=r.data||[];
+ var html='';
+ if(key==="academy")html=rows.map(function(x){return cmntDynamicCard(x.name,x.summary,(x.hours?x.hours+' h · ':'')+(x.category||x.nature||'ENAT'))}).join('');
+ else if(key==="researcher")html=rows.map(function(x){return cmntDynamicCard((x.research_areas||[]).slice(0,2).join(' · ')||'Pesquisador ENAT',x.professional_summary||x.scientific_bio,(x.verification_status||'unverified'))}).join('');
+ else if(key==="evidence")html=rows.map(function(x){return cmntDynamicCard(x.title,x.abstract,(x.evidence_level||'não classificado')+' · '+(x.publication_year||'s/ano'))}).join('');
+ else if(key==="observatory")html=rows.map(function(x){return cmntDynamicCard(x.name,x.description,(x.code||'')+' · '+(x.unit||'índice'))}).join('');
+ else if(key==="events")html=rows.map(function(x){return cmntDynamicCard(x.title,x.description,new Date(x.starts_at).toLocaleString('pt-BR')+' · '+(x.event_type||'evento'))}).join('');
+ else if(key==="editorial")html=rows.map(function(x){return cmntDynamicCard(x.title,x.summary||x.body,(x.article_type||'artigo'))}).join('');
+ else if(key==="scientific_communities")html=rows.map(function(x){return cmntDynamicCard(x.name,x.purpose||x.scope,'comunidade científica')}).join('');
+ else if(key==="institutions")html=rows.map(function(x){return cmntDynamicCard((x.acronym?x.acronym+' — ':'')+x.name,x.description,(x.city||'')+(x.state?'/'+x.state:'')+(x.verified?' · verificada':''))}).join('');
+ else if(key==="governance")html=rows.map(function(x){return cmntDynamicCard(x.name,x.scope||x.contact_notes,(x.partnership_type||'parceria')+' · '+(x.status||''))}).join('');
+ else if(key==="knowledge_base")html=rows.map(function(x){return cmntDynamicCard(x.title,x.summary,(x.item_type||'conhecimento'))}).join('');
+ else if(key==="integrations")html=rows.map(function(x){return cmntDynamicCard(x.source_system+' → '+x.target_type,x.relation_type+' · registro '+x.source_record_id,(x.created_at?new Date(x.created_at).toLocaleDateString('pt-BR'):''))}).join('');
+ else if(key==="scientific_ai")html=rows.map(function(x){return cmntDynamicCard(x.context_type,x.output_summary||x.input_summary,(x.source_count||0)+' fontes'+(x.human_review_required?' · revisão humana':''))}).join('');
+ else html=rows.map(function(x){return cmntDynamicCard(x.title,x.abstract,x.study_type+' · '+x.status+' · ética: '+x.ethics_status)}).join('');
+ if(key==="observatory" && rows.length){
+   var d=await db.from('cmnt_observatory_data').select('indicator_id,period_start,period_end,geography_level,geography_code,value,sample_size,quality_status,provenance').eq('published',true).order('period_end',{ascending:false}).limit(30);
+   if(!d.error && d.data&&d.data.length)html+='<div class="card rounded-3xl p-5"><h3 class="text-lg font-black">Dados publicados</h3><div class="mt-3 space-y-2">'+d.data.map(function(x){return'<div class="flex justify-between gap-3 p-3 rounded-xl bg-slate-50"><span class="text-sm">'+esc(x.geography_level||'nacional')+' '+esc(x.geography_code||'')+' · '+esc(x.period_start)+' a '+esc(x.period_end)+'</span><b>'+Number(x.value).toLocaleString('pt-BR')+'</b></div>'}).join('')+'</div></div>';
+ }
+ if(!html)html='<div class="card rounded-3xl p-8 text-center text-slate-500">Nenhum registro publicado disponível neste módulo ainda. O módulo está conectado ao banco e pronto para receber dados pelo Portal Administrativo.</div>';
+ box.innerHTML='<div class="grid md:grid-cols-2 gap-4">'+html+'</div>';
+}
 function cmntRenderContent(key){
  var d=CMNT_SCI_SECTIONS[key]||CMNT_SCI_SECTIONS.overview;
  var html='<div class="space-y-4"><div class="brand text-white rounded-3xl p-6"><div class="text-xs uppercase tracking-[.2em] text-emerald-300 font-black">'+esc(d.kicker)+'</div><h2 class="text-3xl font-black mt-2">'+esc(d.title)+'</h2><p class="text-white/80 mt-3 leading-7 max-w-4xl">'+esc(d.intro)+'</p></div>';
  if(key==="nexus12")html+='<div class="grid md:grid-cols-2 gap-4">'+NEXUS12.map(function(x,i){return'<article class="card rounded-3xl p-5"><div class="text-xs font-black text-emerald-700">PILAR '+(i+1)+'</div><h3 class="text-xl font-black mt-1">'+esc(x[0])+'</h3><p class="text-slate-600 mt-2 leading-7">'+esc(x[1])+'</p></article>'}).join('')+'</div>';
  else html+='<div class="grid md:grid-cols-2 gap-4">'+d.blocks.map(function(x){return cmntBlock(x[0],x[1])}).join('')+'</div>';
  if(key==="hsi")html+=cmntHSIQuestionnaire();
+ if(["research_lab","researcher","evidence","academy","observatory","events","editorial","scientific_communities","institutions","governance","knowledge_base","integrations","scientific_ai"].indexOf(key)>=0)html+='<div id="cmntData" class="mt-5"><div class="card rounded-3xl p-6 text-slate-400">Conectando este módulo ao banco científico...</div></div><script>setTimeout(function(){loadCmntData("'+key+'")},0)<\/script>';
  return html+'</div>';
 }
 function cmntHSIQuestionnaire(){
