@@ -670,6 +670,14 @@ const HSI_DOTH_P=[
 ];
 function cmntBlock(title,body){return'<article class="card rounded-3xl p-5"><h3 class="text-lg font-black">'+esc(title)+'</h3><p class="text-slate-600 mt-2 leading-7 whitespace-pre-wrap">'+esc(body)+'</p></article>'}
 function cmntDynamicCard(title,body,meta){return'<article class="card rounded-3xl p-5"><div class="flex justify-between gap-3 items-start"><div><h3 class="text-lg font-black">'+esc(title)+'</h3><p class="text-slate-600 mt-2 leading-7 whitespace-pre-wrap">'+esc(body||'')+'</p></div>'+(meta?'<span class="shrink-0 text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg">'+esc(meta)+'</span>':'')+'</div></article>'}
+async function cmntNeuroDriveCatalog(){
+ var r=await db.from('enat_courses').select('id,name,code,nature,modality,summary,category,hours,slug,active,published').ilike('name','%NEURODRIVE%').eq('active',true).eq('published',true).order('name');
+ if(r.error||!r.data||!r.data.length)return '';
+ var cards=r.data.map(function(x){
+   return '<article class="p-5 rounded-2xl bg-slate-50 border border-slate-200"><div class="text-xs font-black text-emerald-700">'+esc(x.code||'NEURODRIVE')+'</div><h4 class="text-xl font-black mt-1">'+esc(x.name)+'</h4><div class="text-sm text-slate-500 mt-2">'+esc((x.hours||'')+' horas · '+(x.modality||'online'))+'</div><p class="text-slate-600 mt-3 leading-7">'+esc(x.summary||'Curso integrado ao ecossistema Neurotrânsito.')+'</p><button type="button" onclick="cmntTab(&quot;neurodrive&quot;)" class="mt-4 px-4 py-2 rounded-xl bg-[#07111f] text-white font-black">Abrir curso NeuroDrive</button></article>';
+ }).join('');
+ return '<section class="card rounded-3xl p-5 mt-4 md:col-span-2"><div class="text-xs uppercase tracking-widest text-emerald-700 font-black">INTEGRAÇÃO NEUROTRÂNSITO ↔ NEURODRIVE</div><h3 class="text-2xl font-black mt-1">Cursos NeuroDrive disponíveis</h3><p class="text-slate-600 mt-2 leading-7">O CMNT consulta o catálogo publicado do NeuroDrive/ENAT-HSI e conecta a formação à camada científica, sem duplicar o conteúdo original.</p><div class="grid md:grid-cols-2 gap-4 mt-4">'+cards+'</div></section>';
+}
 async function loadCmntData(key){
  var box=document.getElementById('cmntData');if(!box)return;
  var q=null;
@@ -703,12 +711,7 @@ async function loadCmntData(key){
  else if(key==="integrations")html=rows.map(function(x){return cmntDynamicCard(x.source_system+' → '+x.target_type,x.relation_type+' · registro '+x.source_record_id,(x.created_at?new Date(x.created_at).toLocaleDateString('pt-BR'):''))}).join('');
  else if(key==="scientific_ai")html=rows.map(function(x){return cmntDynamicCard(x.context_type,x.output_summary||x.input_summary,(x.source_count||0)+' fontes'+(x.human_review_required?' · revisão humana':''))}).join('');
  else html=rows.map(function(x){return cmntDynamicCard(x.title,x.abstract,x.study_type+' · '+x.status+' · ética: '+x.ethics_status)}).join('');
- if(key==="integrations"){
-   var nc=await db.from('enat_courses').select('id,name,code,nature,modality,summary,category,hours,slug,active,published').ilike('name','%NEURODRIVE%').eq('active',true).eq('published',true).order('name');
-   if(!nc.error && nc.data && nc.data.length){
-     html+='<div class="card rounded-3xl p-5 mt-4 md:col-span-2"><div class="text-xs uppercase tracking-widest text-emerald-700 font-black">INTEGRAÇÃO NEUROTRÂNSITO ↔ NEURODRIVE</div><h3 class="text-2xl font-black mt-1">Cursos NeuroDrive disponíveis</h3><p class="text-slate-600 mt-2 leading-7">O CMNT lê o catálogo publicado do NeuroDrive/ENAT-HSI para conectar formação, ciência e acompanhamento pedagógico sem duplicar o curso original.</p><div class="grid md:grid-cols-2 gap-4 mt-4">'+nc.data.map(function(x){return'<div class="p-5 rounded-2xl bg-slate-50 border border-slate-200"><div class="text-xs font-black text-emerald-700">'+esc(x.code||'NEURODRIVE')+'</div><h4 class="text-xl font-black mt-1">'+esc(x.name)+'</h4><div class="text-sm text-slate-500 mt-2">'+esc((x.hours||'')+' horas · '+(x.modality||'online'))+'</div><p class="text-slate-600 mt-3 leading-7">'+esc(x.summary||'Curso integrado ao ecossistema Neurotrânsito.')+'</p><button onclick="cmntTab(&quot;neurodrive&quot;)" class="mt-4 px-4 py-2 rounded-xl bg-[#07111f] text-white font-black">Abrir curso NeuroDrive</button></div>}).join('')+'</div></div>';
-   }
- }
+ if(key==="integrations"){ html+=await cmntNeuroDriveCatalog(); }
  if(key==="observatory" && rows.length){
    var d=await db.from('cmnt_observatory_data').select('indicator_id,period_start,period_end,geography_level,geography_code,value,sample_size,quality_status,provenance').eq('published',true).order('period_end',{ascending:false}).limit(30);
    if(!d.error && d.data&&d.data.length)html+='<div class="card rounded-3xl p-5"><h3 class="text-lg font-black">Dados publicados</h3><div class="mt-3 space-y-2">'+d.data.map(function(x){return'<div class="flex justify-between gap-3 p-3 rounded-xl bg-slate-50"><span class="text-sm">'+esc(x.geography_level||'nacional')+' '+esc(x.geography_code||'')+' · '+esc(x.period_start)+' a '+esc(x.period_end)+'</span><b>'+Number(x.value).toLocaleString('pt-BR')+'</b></div>'}).join('')+'</div></div>';
