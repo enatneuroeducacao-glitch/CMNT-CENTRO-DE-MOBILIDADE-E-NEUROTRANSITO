@@ -338,3 +338,127 @@
     body.insertAdjacentHTML('beforeend',box+'</div>');
   };
 })();
+
+/* CMNT trajectory integration — ENAT catalog + NeuroDrive learning + NEXUS bridge. */
+(function(){
+  'use strict';
+  var previousTrajectory=window.cmntPlatformGo;
+
+  function trEsc(v){
+    return String(v==null?'':v).replace(/[&<>"']/g,function(ch){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch];
+    });
+  }
+  function trBadge(v){
+    return '<span class="inline-flex px-2 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-black">'+trEsc(v)+'</span>';
+  }
+  function nexusName(code){
+    var m={SA:'Consciência Situacional',PR:'Percepção de Risco',TD:'Tomada de Decisão',CV:'Controle Veicular',EC:'Comunicação Eficaz',RL:'Regulação e Legislação',AD:'Adaptação',IE:'Inteligência Emocional',RS:'Responsabilidade Social',AC:'Aprendizagem Contínua',ER:'Ergonomia',PS:'Primeiros Socorros'};
+    return m[code]||code;
+  }
+  function progressBar(value){
+    var n=Math.max(0,Math.min(100,Number(value)||0));
+    return '<div class="w-full h-2 rounded-full bg-slate-200 overflow-hidden"><div class="h-full rounded-full bg-emerald-600" style="width:'+n+'%"></div></div>';
+  }
+
+  async function trajectoryData(){
+    if(!S.user)return {courses:[],links:[],enrollments:[],lessons:[]};
+
+    var [coursesR,linksR,enrollR,lessonsR]=await Promise.all([
+      db.from('enat_courses').select('id,name,code,summary,category,hours,modality,version,slug,thumbnail_url,modules').eq('published',true).eq('active',true).order('name'),
+      db.from('cmnt_course_nexus_links').select('course_id,competency_code,relevance,mapping_note').eq('active',true),
+      db.from('ava_enrollments').select('id,course_id,status,enrolled_at,completed_at').eq('user_id',S.user.id).order('enrolled_at',{ascending:false}),
+      db.from('ai_lessons').select('id,started_at,ended_at,status,phase,duration_minutes,seguranca,comunicacao,adaptacao,evolucao,objective,lesson_number').eq('user_id',S.user.id).order('started_at',{ascending:false}).limit(100)
+    ]);
+
+    var courses=coursesR.data||[];
+    var links=linksR.data||[];
+    var enrollments=enrollR.data||[];
+    var lessons=lessonsR.data||[];
+    return {courses:courses,links:links,enrollments:enrollments,lessons:lessons};
+  }
+
+  window.cmntPlatformGo=async function(section){
+    await previousTrajectory(section);
+    if(section!=='education')return;
+
+    var body=document.getElementById('cmnt-platform-body');
+    if(!body)return;
+
+    var old=document.getElementById('cmnt-learning-trajectory');
+    if(old)old.remove();
+
+    if(!S.user){
+      body.insertAdjacentHTML('beforeend',
+        '<div id="cmnt-learning-trajectory" class="mt-4">'+
+        card('<h3 class="text-xl font-black">Minha trajetória ENAT · NeuroDrive</h3><p class="text-sm text-slate-500 mt-2">Entre na sua conta para visualizar cursos, atividades do NeuroDrive e a ponte com o NEXUS 12.</p><button onclick="auth()" class="mt-4 bg-[#07111f] text-white px-4 py-3 rounded-xl font-black">Entrar</button>')+
+        '</div>'
+      );
+      return;
+    }
+
+    var d=await trajectoryData();
+    var byCourse={};
+    d.links.forEach(function(x){
+      if(!byCourse[x.course_id])byCourse[x.course_id]=[];
+      byCourse[x.course_id].push(x);
+    });
+    var enrolledByCourse={};
+    d.enrollments.forEach(function(x){enrolledByCourse[x.course_id]=x});
+
+    var completed=d.lessons.filter(function(x){
+      return ['completed','concluida','concluído','finalized','finished'].indexOf(String(x.status||'').toLowerCase())>=0 || !!x.ended_at;
+    }).length;
+    var total=d.lessons.length;
+    var last=d.lessons[0];
+    var avgSecurity=d.lessons.length?d.lessons.reduce(function(a,x){return a+Number(x.seguranca||0)},0)/d.lessons.length:0;
+    var avgCommunication=d.lessons.length?d.lessons.reduce(function(a,x){return a+Number(x.comunicacao||0)},0)/d.lessons.length:0;
+    var avgAdaptation=d.lessons.length?d.lessons.reduce(function(a,x){return a+Number(x.adaptacao||0)},0)/d.lessons.length:0;
+    var avgEvolution=d.lessons.length?d.lessons.reduce(function(a,x){return a+Number(x.evolucao||0)},0)/d.lessons.length:0;
+
+    var html='<div id="cmnt-learning-trajectory" class="mt-4 space-y-4">';
+    html+=card(
+      '<div class="flex items-center justify-between gap-3"><div><div class="text-xs uppercase tracking-widest text-emerald-700 font-black">CMNT · trajetória formativa</div>'+
+      '<h3 class="text-xl font-black mt-1">ENAT + NeuroDrive + NEXUS 12</h3>'+
+      '<p class="text-sm text-slate-500 mt-1">A rede social passa a acompanhar sua formação sem substituir o ambiente de aprendizagem.</p></div>'+
+      '<span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-black">Dados da sua conta</span></div>'+
+      '<div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-5">'+
+      metric('Aulas NeuroDrive',total,'registros vinculados')+
+      metric('Aulas concluídas',completed,total?'de '+total:'sem registros')+
+      metric('Cursos matriculados',d.enrollments.length,'AVA')+
+      metric('Última atividade',last&&last.started_at?new Date(last.started_at).toLocaleDateString('pt-BR'):'—','NeuroDrive')+
+      '</div>'
+    );
+
+    if(d.enrollments.length){
+      html+=card('<h3 class="font-black text-lg">Meus cursos</h3><p class="text-sm text-slate-500 mt-1">Matrículas existentes no ambiente de formação.</p><div class="space-y-3 mt-4">'+
+        d.enrollments.map(function(e){
+          var c=d.courses.find(function(x){return x.id===e.course_id});
+          var title=c?c.name:'Curso do ambiente de formação';
+          var pct=e.status==='completed'||e.completed_at?100:(e.status==='in_progress'?50:0);
+          return '<div class="p-4 rounded-2xl bg-slate-50"><div class="flex justify-between gap-3"><div><b>'+trEsc(title)+'</b><div class="text-xs text-slate-500 mt-1">'+trEsc(e.status||'matriculado')+(e.enrolled_at?' · matrícula '+new Date(e.enrolled_at).toLocaleDateString('pt-BR'):'')+'</div></div>'+trBadge(e.completed_at?'Concluído':(e.status||'Matriculado'))+'</div><div class="mt-3">'+progressBar(pct)+'</div></div>';
+        }).join('')+'</div>');
+    }
+
+    html+=card('<div class="flex items-center justify-between gap-3"><div><h3 class="font-black text-lg">Cursos ENAT conectados ao CMNT</h3><p class="text-sm text-slate-500 mt-1">O catálogo continua sendo administrado na Academia ENAT; o CMNT apenas apresenta a trilha e suas competências.</p></div>'+trBadge(d.courses.length+' curso(s)')+'</div>'+
+      (d.courses.length?'<div class="grid md:grid-cols-2 gap-3 mt-4">'+d.courses.map(function(c){
+        var links=byCourse[c.id]||[];
+        var enrolled=enrolledByCourse[c.id];
+        return '<article class="p-4 rounded-2xl bg-slate-50 border border-slate-100"><div class="text-xs font-black text-emerald-700">'+trEsc(c.code||'ENAT')+' · '+trEsc(c.hours||0)+' h</div><h4 class="font-black mt-1">'+trEsc(c.name)+'</h4><p class="text-sm text-slate-600 mt-2">'+trEsc(String(c.summary||'').slice(0,220))+'</p>'+
+          (enrolled?'<div class="mt-3">'+trBadge('Você está matriculado')+'</div>':'')+
+          '<div class="flex flex-wrap gap-2 mt-3">'+(links.length?links.map(function(l){return trBadge('NEXUS '+trEsc(l.competency_code)+' · '+trEsc(nexusName(l.competency_code)))}).join(''):'<span class="text-xs text-slate-400">Mapeamento NEXUS ainda não definido.</span>')+'</div></article>';
+      }).join('')+'</div>':'<div class="mt-4 p-4 rounded-2xl bg-slate-50 text-sm text-slate-600">Nenhum curso publicado neste momento.</div>'));
+
+    html+=card('<h3 class="font-black text-lg">Competências observadas no NeuroDrive</h3><p class="text-sm text-slate-500 mt-1">Esta é uma ponte inicial entre os indicadores pedagógicos já existentes e o NEXUS 12. Ela não altera os cálculos originais do NeuroDrive.</p>'+
+      '<div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">'+
+      metric('Segurança',''+(avgSecurity?avgSecurity.toFixed(1):'—'),'ponte → Consciência/Percepção de risco')+
+      metric('Comunicação',''+(avgCommunication?avgCommunication.toFixed(1):'—'),'ponte → Comunicação eficaz')+
+      metric('Adaptação',''+(avgAdaptation?avgAdaptation.toFixed(1):'—'),'ponte → Adaptação')+
+      metric('Evolução',''+(avgEvolution?avgEvolution.toFixed(1):'—'),'ponte → Aprendizagem contínua')+
+      '</div>'+
+      '<div class="mt-4 p-4 rounded-2xl border border-emerald-100 bg-emerald-50 text-sm text-emerald-900"><b>Próxima camada:</b> transformar essa ponte em trilhas NEXUS por curso/módulo, com progresso e competências, sem duplicar os dados do NeuroDrive.</div>'
+    );
+
+    body.insertAdjacentHTML('beforeend',html+'</div>');
+  };
+})();
