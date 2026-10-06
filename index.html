@@ -678,7 +678,7 @@ async function cmntNeuroDriveCatalog(){
  }).join('');
  return '<section class="card rounded-3xl p-5 mt-4 md:col-span-2"><div class="text-xs uppercase tracking-widest text-emerald-700 font-black">INTEGRAÇÃO NEUROTRÂNSITO ↔ NEURODRIVE</div><h3 class="text-2xl font-black mt-1">Cursos NeuroDrive disponíveis</h3><p class="text-slate-600 mt-2 leading-7">O CMNT consulta o catálogo publicado do NeuroDrive/ENAT-HSI e conecta a formação à camada científica, sem duplicar o conteúdo original.</p><div class="grid md:grid-cols-2 gap-4 mt-4">'+cards+'</div></section>';
 }
-async async function loadCmntData(key){
+async function loadCmntData(key){
  var box=document.getElementById('cmntData');if(!box)return;
  var q=null;
  if(key==="research_lab")q=db.from('cmnt_research_projects').select('id,title,abstract,study_type,status,ethics_status,updated_at').neq('status','archived').order('updated_at',{ascending:false}).limit(20);
