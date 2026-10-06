@@ -217,22 +217,150 @@ async function sendMessage(){
  await notifyUser(S_MSG.target,'message',(S.profile.display_name||'Alguém')+' enviou uma mensagem.');
  el.value='';await openMessageThread(S_MSG.target);
 }
+var CMNT_LIVE={hostStream:null,hostChannel:null,hostPeers:{},hostStreamId:null,viewerChannel:null,viewerPc:null,viewerStreamId:null,viewerId:null,viewerHostId:null};
+
+function cmntLiveTopic(id){return 'cmnt-live-'+id}
+function cmntLiveSend(ch,event,payload){if(!ch)return Promise.resolve();return ch.send({type:'broadcast',event:event,payload:payload})}
+function cmntLivePresenceCount(ch){if(!ch)return 0;var state=ch.presenceState(),n=0;Object.keys(state||{}).forEach(function(k){(state[k]||[]).forEach(function(x){if(x.role==='viewer')n++})});return n}
+async function cmntLiveUpdateViewers(count){if(!CMNT_LIVE.hostStreamId)return;await db.from('social_live_streams').update({viewer_count:count}).eq('id',CMNT_LIVE.hostStreamId).eq('host_user_id',S.user.id)}
+
 async function loadLiveStreams(){
- var r=await db.from('social_live_streams').select('id,host_user_id,title,description,category,visibility,community_id,status,scheduled_at,started_at,ended_at,mux_playback_id,allow_chat,allow_reactions,viewer_count').in('status',['scheduled','live']).order('scheduled_at',{ascending:true}).limit(30);
+ var r=await db.from('social_live_streams').select('id,host_user_id,title,description,category,visibility,community_id,status,scheduled_at,started_at,ended_at,allow_chat,allow_reactions,viewer_count,mux_playback_id').in('status',['scheduled','live']).order('scheduled_at',{ascending:true}).limit(30);
  return r.error?[]:(r.data||[]);
 }
+
 async function createLiveSchedule(){
- if(!S.user)return auth();document.getElementById('modal').innerHTML='<div class="fixed inset-0 modal z-[70] grid place-items-center p-4"><div class="bg-white rounded-3xl p-6 w-full max-w-lg"><div class="flex justify-between"><h2 class="text-2xl font-black">Agendar transmissão</h2><button onclick="closeModal()" class="text-2xl text-slate-400">×</button></div><input id="liveTitle" class="w-full bg-slate-100 rounded-2xl p-3 mt-5" placeholder="Título *"><textarea id="liveDesc" class="w-full bg-slate-100 rounded-2xl p-3 mt-3" placeholder="Descrição"></textarea><input id="liveCat" class="w-full bg-slate-100 rounded-2xl p-3 mt-3" placeholder="Categoria (ex.: segurança viária)"><input id="liveDate" type="datetime-local" class="w-full bg-slate-100 rounded-2xl p-3 mt-3"><button onclick="saveLiveSchedule()" class="w-full bg-[#0b8b55] text-white rounded-2xl p-3 mt-4 font-black">Agendar</button></div></div>';
+ if(!S.user)return auth();
+ document.getElementById('modal').innerHTML='<div class="fixed inset-0 modal z-[80] grid place-items-center p-4 overflow-auto"><div class="bg-white rounded-3xl p-6 w-full max-w-lg my-5"><div class="flex justify-between items-center"><div><div class="text-xs uppercase tracking-widest text-red-600 font-black">CMNT LIVE</div><h2 class="text-2xl font-black mt-1">Nova transmissão</h2></div><button onclick="closeModal()" class="text-2xl text-slate-400">×</button></div><input id="liveTitle" class="w-full bg-slate-100 rounded-2xl p-3 mt-5" placeholder="Título *"><textarea id="liveDesc" class="w-full bg-slate-100 rounded-2xl p-3 mt-3" rows="3" placeholder="Descrição"></textarea><input id="liveCat" class="w-full bg-slate-100 rounded-2xl p-3 mt-3" placeholder="Categoria (ex.: segurança viária)"><div class="grid sm:grid-cols-2 gap-3 mt-3"><input id="liveDate" type="datetime-local" class="w-full bg-slate-100 rounded-2xl p-3" title="Data e hora"><select id="liveVisibility" class="w-full bg-slate-100 rounded-2xl p-3"><option value="public">Público</option><option value="community">Comunidade</option></select></div><div class="grid sm:grid-cols-2 gap-3 mt-4"><button onclick="saveLiveSchedule()" class="bg-slate-100 text-slate-800 rounded-2xl p-3 font-black">Agendar</button><button onclick="createLiveNow()" class="bg-[#0b8b55] text-white rounded-2xl p-3 font-black">🔴 Transmitir agora</button></div><p class="text-xs text-slate-500 mt-4 leading-5">A transmissão usa câmera e microfone do navegador. O vídeo é distribuído em tempo real para os espectadores conectados.</p></div></div>';
 }
+
 async function saveLiveSchedule(){
- var title=document.getElementById('liveTitle').value.trim(),desc=document.getElementById('liveDesc').value.trim(),cat=document.getElementById('liveCat').value.trim()||'Mobilidade',date=document.getElementById('liveDate').value;if(!title||!date)return toast('Informe título e data da transmissão.',true);
- var r=await db.from('social_live_streams').insert({host_user_id:S.user.id,title:title,description:desc,category:cat,status:'scheduled',scheduled_at:new Date(date).toISOString()});if(r.error)return toast('Não foi possível agendar: '+r.error.message,true);closeModal();toast('Transmissão agendada.');renderLive();
+ var title=document.getElementById('liveTitle').value.trim(),desc=document.getElementById('liveDesc').value.trim(),cat=document.getElementById('liveCat').value.trim()||'Mobilidade',date=document.getElementById('liveDate').value,visibility=document.getElementById('liveVisibility').value;
+ if(!title||!date)return toast('Informe título e data da transmissão.',true);
+ var r=await db.from('social_live_streams').insert({host_user_id:S.user.id,title:title,description:desc,category:cat,visibility:visibility,status:'scheduled',scheduled_at:new Date(date).toISOString()}).select('*').maybeSingle();
+ if(r.error)return toast('Não foi possível agendar: '+r.error.message,true);
+ closeModal();toast('Transmissão agendada.');renderLive();
 }
+
+async function createLiveNow(){
+ var title=document.getElementById('liveTitle').value.trim(),desc=document.getElementById('liveDesc').value.trim(),cat=document.getElementById('liveCat').value.trim()||'Mobilidade',visibility=document.getElementById('liveVisibility').value;
+ if(!title)return toast('Informe o título da transmissão.',true);
+ var r=await db.from('social_live_streams').insert({host_user_id:S.user.id,title:title,description:desc,category:cat,visibility:visibility,status:'scheduled',scheduled_at:new Date().toISOString()}).select('*').maybeSingle();
+ if(r.error)return toast('Não foi possível criar a transmissão: '+r.error.message,true);
+ closeModal();await cmntStartLive(r.data.id);
+}
+
+async function cmntStartLive(id){
+ if(!S.user)return auth();
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return toast('Este navegador não disponibiliza câmera e microfone para a transmissão.',true);
+ if(CMNT_LIVE.hostChannel||CMNT_LIVE.hostStream)return toast('Você já possui uma transmissão em andamento.',true);
+ try{
+  var stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720},facingMode:'user'},audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+  var r=await db.from('social_live_streams').update({status:'live',started_at:new Date().toISOString(),ended_at:null}).eq('id',id).eq('host_user_id',S.user.id).select('*').maybeSingle();
+  if(r.error||!r.data){stream.getTracks().forEach(function(t){t.stop()});throw new Error(r.error?r.error.message:'Transmissão não encontrada ou sem permissão.')}
+  CMNT_LIVE.hostStream=stream;CMNT_LIVE.hostStreamId=id;
+  document.getElementById('modal').innerHTML='<div class="fixed inset-0 modal z-[80] grid place-items-center p-3 sm:p-5"><div class="bg-white rounded-3xl w-full max-w-5xl max-h-[calc(100vh-2rem)] overflow-auto shadow-2xl"><div class="p-5 border-b flex items-center justify-between gap-3"><div><div class="text-xs uppercase tracking-widest text-red-600 font-black">● AO VIVO</div><h2 class="text-2xl font-black mt-1">'+esc(r.data.title)+'</h2><p class="text-sm text-slate-500 mt-1">Câmera e microfone ativos · <span id="cmntLiveViewerCount">0</span> espectadores</p></div><button onclick="cmntStopLive()" class="bg-red-600 text-white px-4 py-2.5 rounded-xl font-black">Encerrar transmissão</button></div><div class="p-5"><video id="cmntHostVideo" autoplay muted playsinline controls class="w-full aspect-video bg-black rounded-2xl object-contain"></video><div class="grid md:grid-cols-[1fr_320px] gap-4 mt-4"><div class="p-4 rounded-2xl bg-slate-50"><b>Estúdio CMNT</b><p class="text-sm text-slate-500 mt-1">Mantenha esta janela aberta durante a transmissão. Os espectadores entram pela aba Ao vivo.</p></div><div id="cmntHostChat" class="border rounded-2xl p-4 max-h-56 overflow-auto"><div class="text-sm text-slate-400">O chat aparecerá aqui.</div></div></div></div></div></div>';
+  document.getElementById('cmntHostVideo').srcObject=stream;
+  await cmntHostConnect();
+ }catch(e){toast('Não foi possível iniciar a live: '+(e.message||e),true)}
+}
+
+async function cmntHostConnect(){
+ var id=CMNT_LIVE.hostStreamId;
+ var ch=db.channel(cmntLiveTopic(id),{config:{broadcast:{self:false},presence:{key:S.user.id}}});
+ CMNT_LIVE.hostChannel=ch;
+ ch.on('broadcast',{event:'signal'},async function(msg){
+   var p=msg.payload||{};
+   if(p.target!==S.user.id&&p.target!=='host')return;
+   try{
+    if(p.kind==='join'){
+      var viewer=p.from;if(!viewer)return;
+      if(CMNT_LIVE.hostPeers[viewer]){try{CMNT_LIVE.hostPeers[viewer].close()}catch(e){}}
+      var pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]});
+      CMNT_LIVE.hostPeers[viewer]=pc;
+      CMNT_LIVE.hostStream.getTracks().forEach(function(t){pc.addTrack(t,CMNT_LIVE.hostStream)});
+      pc.onicecandidate=function(e){if(e.candidate)cmntLiveSend(ch,'signal',{kind:'candidate',from:S.user.id,target:viewer,candidate:e.candidate})};
+      pc.onconnectionstatechange=function(){if(['failed','disconnected','closed'].includes(pc.connectionState)){try{pc.close()}catch(e){}delete CMNT_LIVE.hostPeers[viewer]}};
+      var offer=await pc.createOffer();await pc.setLocalDescription(offer);
+      await cmntLiveSend(ch,'signal',{kind:'offer',from:S.user.id,target:viewer,description:pc.localDescription});
+    }else if(p.kind==='answer'){
+      var pc=CMNT_LIVE.hostPeers[p.from];if(pc&&p.description)await pc.setRemoteDescription(new RTCSessionDescription(p.description));
+    }else if(p.kind==='candidate'){
+      var pc=CMNT_LIVE.hostPeers[p.from];if(pc&&p.candidate)await pc.addIceCandidate(new RTCIceCandidate(p.candidate)).catch(function(){});
+    }
+   }catch(e){console.error('CMNT host signaling',e)}
+ });
+ ch.on('broadcast',{event:'chat'},function(msg){cmntLiveAppendChat('cmntHostChat',msg.payload)});
+ ch.on('broadcast',{event:'reaction'},function(msg){cmntLiveReaction(msg.payload)});
+ ch.on('presence',{event:'sync'},function(){var n=cmntLivePresenceCount(ch);var el=document.getElementById('cmntLiveViewerCount');if(el)el.textContent=n;cmntLiveUpdateViewers(n)});
+ ch.on('presence',{event:'leave'},function(){var n=cmntLivePresenceCount(ch);var el=document.getElementById('cmntLiveViewerCount');if(el)el.textContent=n;cmntLiveUpdateViewers(n)});
+ ch.on('presence',{event:'join'},function(){var n=cmntLivePresenceCount(ch);var el=document.getElementById('cmntLiveViewerCount');if(el)el.textContent=n;cmntLiveUpdateViewers(n)});
+ ch.on('broadcast',{event:'control'},function(msg){var p=msg.payload||{};if(p.kind==='leave'&&CMNT_LIVE.hostPeers[p.from]){try{CMNT_LIVE.hostPeers[p.from].close()}catch(e){}delete CMNT_LIVE.hostPeers[p.from]}});
+ await new Promise(function(resolve,reject){var timer=setTimeout(function(){reject(new Error('O Realtime não respondeu ao conectar a live.'))},10000);ch.subscribe(function(status,err){if(status==='SUBSCRIBED'){clearTimeout(timer);resolve()}else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){clearTimeout(timer);reject(err||new Error(status))}})});
+ await ch.track({role:'host',host_id:S.user.id});
+ toast('Live iniciada. A câmera está transmitindo.');
+}
+
+function cmntLiveAppendChat(target,p){
+ var box=document.getElementById(target);if(!box||!p)return;
+ var line=document.createElement('div');line.className='text-sm py-1.5 border-b border-slate-100';line.innerHTML='<b>'+esc(p.name||'Participante')+':</b> '+esc(p.text||'');box.appendChild(line);box.scrollTop=box.scrollHeight;
+}
+function cmntLiveReaction(p){if(!p)return;toast((p.name||'Alguém')+' enviou '+(p.emoji||'❤️'))}
+function cmntLiveChat(){
+ var el=document.getElementById('cmntViewerChatInput');if(!el||!CMNT_LIVE.viewerChannel)return;var text=el.value.trim();if(!text)return;cmntLiveSend(CMNT_LIVE.viewerChannel,'chat',{name:(S.profile&&S.profile.display_name)||'Visitante',text:text});el.value='';
+}
+function cmntLiveReact(emoji){if(CMNT_LIVE.viewerChannel)cmntLiveSend(CMNT_LIVE.viewerChannel,'reaction',{name:(S.profile&&S.profile.display_name)||'Visitante',emoji:emoji})}
+
+async function cmntOpenLive(id){
+ var r=await db.from('social_live_streams').select('*').eq('id',id).maybeSingle();
+ if(r.error||!r.data)return toast('Não foi possível localizar esta transmissão.',true);
+ if(r.data.status!=='live')return toast('Esta transmissão ainda não está ao vivo.',true);
+ if(CMNT_LIVE.viewerChannel)await cmntCloseViewer();
+ CMNT_LIVE.viewerStreamId=id;CMNT_LIVE.viewerId=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+'-'+Math.random().toString(36).slice(2));CMNT_LIVE.viewerHostId=r.data.host_user_id;
+ document.getElementById('modal').innerHTML='<div class="fixed inset-0 modal z-[80] grid place-items-center p-3 sm:p-5"><div class="bg-white rounded-3xl w-full max-w-6xl max-h-[calc(100vh-2rem)] overflow-auto shadow-2xl"><div class="p-5 border-b flex items-center justify-between gap-3"><div><div class="text-xs uppercase tracking-widest text-red-600 font-black">● AO VIVO · '+(Number(r.data.viewer_count||0))+' espectadores</div><h2 class="text-2xl font-black mt-1">'+esc(r.data.title)+'</h2><p class="text-sm text-slate-500">'+esc(r.data.description||'')+'</p></div><button onclick="cmntCloseViewer()" class="text-2xl text-slate-400">×</button></div><div class="p-5 grid lg:grid-cols-[minmax(0,1fr)_340px] gap-5"><div><video id="cmntViewerVideo" autoplay playsinline controls class="w-full aspect-video bg-black rounded-2xl object-contain"></video><div class="flex flex-wrap gap-2 mt-3"><button onclick="cmntLiveReact('❤️')" class="px-4 py-2 bg-slate-100 rounded-xl font-bold">❤️</button><button onclick="cmntLiveReact('👏')" class="px-4 py-2 bg-slate-100 rounded-xl font-bold">👏</button><button onclick="cmntLiveReact('🔥')" class="px-4 py-2 bg-slate-100 rounded-xl font-bold">🔥</button></div></div><div class="border rounded-2xl p-4 flex flex-col min-h-[360px]"><div class="font-black">Chat da live</div><div id="cmntViewerChat" class="flex-1 overflow-auto mt-3 space-y-1"></div><div class="flex gap-2 mt-3"><input id="cmntViewerChatInput" class="flex-1 bg-slate-100 rounded-xl p-3" placeholder="Escreva no chat" onkeydown="if(event.key==='Enter')cmntLiveChat()"><button onclick="cmntLiveChat()" class="bg-[#07111f] text-white px-3 rounded-xl font-black">Enviar</button></div></div></div></div></div>';
+ var ch=db.channel(cmntLiveTopic(id),{config:{broadcast:{self:false},presence:{key:CMNT_LIVE.viewerId}}});CMNT_LIVE.viewerChannel=ch;
+ ch.on('broadcast',{event:'signal'},async function(msg){
+  var p=msg.payload||{};if(p.target!==CMNT_LIVE.viewerId)return;
+  try{
+   if(p.kind==='offer'){
+    var pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]});CMNT_LIVE.viewerPc=pc;
+    pc.ontrack=function(e){var v=document.getElementById('cmntViewerVideo');if(v&&e.streams&&e.streams[0])v.srcObject=e.streams[0]};
+    pc.onicecandidate=function(e){if(e.candidate)cmntLiveSend(ch,'signal',{kind:'candidate',from:CMNT_LIVE.viewerId,target:r.data.host_user_id,candidate:e.candidate})};
+    await pc.setRemoteDescription(new RTCSessionDescription(p.description));var answer=await pc.createAnswer();await pc.setLocalDescription(answer);
+    await cmntLiveSend(ch,'signal',{kind:'answer',from:CMNT_LIVE.viewerId,target:r.data.host_user_id,description:pc.localDescription});
+   }else if(p.kind==='candidate'&&CMNT_LIVE.viewerPc&&p.candidate){await CMNT_LIVE.viewerPc.addIceCandidate(new RTCIceCandidate(p.candidate)).catch(function(){})}
+  }catch(e){console.error('CMNT viewer signaling',e);toast('Falha ao conectar o vídeo ao vivo.',true)}
+ });
+ ch.on('broadcast',{event:'chat'},function(msg){cmntLiveAppendChat('cmntViewerChat',msg.payload)});
+ ch.on('broadcast',{event:'reaction'},function(msg){cmntLiveReaction(msg.payload)});
+ ch.on('broadcast',{event:'control'},function(msg){if((msg.payload||{}).kind==='end'){toast('A transmissão foi encerrada pelo apresentador.');cmntCloseViewer()}});
+ await new Promise(function(resolve,reject){var timer=setTimeout(function(){reject(new Error('O Realtime não respondeu ao conectar à live.'))},10000);ch.subscribe(async function(status,err){if(status==='SUBSCRIBED'){clearTimeout(timer);await ch.track({role:'viewer',viewer_id:CMNT_LIVE.viewerId});await cmntLiveSend(ch,'signal',{kind:'join',from:CMNT_LIVE.viewerId,target:r.data.host_user_id});resolve()}else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){clearTimeout(timer);reject(err||new Error(status))}})});
+}
+
+async function cmntCloseViewer(){
+ if(CMNT_LIVE.viewerChannel){try{await cmntLiveSend(CMNT_LIVE.viewerChannel,'control',{kind:'leave',from:CMNT_LIVE.viewerId})}catch(e){}try{await db.removeChannel(CMNT_LIVE.viewerChannel)}catch(e){}}
+ if(CMNT_LIVE.viewerPc){try{CMNT_LIVE.viewerPc.close()}catch(e){}}
+ CMNT_LIVE.viewerChannel=null;CMNT_LIVE.viewerPc=null;CMNT_LIVE.viewerStreamId=null;CMNT_LIVE.viewerId=null;CMNT_LIVE.viewerHostId=null;
+ closeModal();
+}
+
+async function cmntStopLive(){
+ if(!CMNT_LIVE.hostStreamId)return;
+ var id=CMNT_LIVE.hostStreamId;
+ try{if(CMNT_LIVE.hostChannel)await cmntLiveSend(CMNT_LIVE.hostChannel,'control',{kind:'end'})}catch(e){}
+ try{await db.from('social_live_streams').update({status:'ended',ended_at:new Date().toISOString()}).eq('id',id).eq('host_user_id',S.user.id)}catch(e){}
+ if(CMNT_LIVE.hostChannel){try{await db.removeChannel(CMNT_LIVE.hostChannel)}catch(e){}}
+ Object.keys(CMNT_LIVE.hostPeers).forEach(function(k){try{CMNT_LIVE.hostPeers[k].close()}catch(e){}});
+ if(CMNT_LIVE.hostStream)CMNT_LIVE.hostStream.getTracks().forEach(function(t){t.stop()});
+ CMNT_LIVE={hostStream:null,hostChannel:null,hostPeers:{},hostStreamId:null,viewerChannel:CMNT_LIVE.viewerChannel,viewerPc:CMNT_LIVE.viewerPc,viewerStreamId:CMNT_LIVE.viewerStreamId,viewerId:CMNT_LIVE.viewerId,viewerHostId:CMNT_LIVE.viewerHostId};
+ closeModal();toast('Transmissão encerrada.');renderLive();
+}
+
 async function renderLive(){
  var section=document.getElementById('liveData');if(!section)return;section.innerHTML='<div class="card rounded-3xl p-6 text-slate-400">Carregando transmissões...</div>';var rows=await loadLiveStreams();
- section.innerHTML=(rows.length?rows.map(function(x){var live=x.status==='live';var player=x.mux_playback_id?'<iframe class="w-full aspect-video rounded-2xl mt-4" src="https://stream.mux.com/'+encodeURIComponent(x.mux_playback_id)+'.m3u8" allow="autoplay;fullscreen"></iframe>':'';return'<article class="card rounded-3xl p-5"><div class="flex items-center justify-between gap-3"><div><span class="text-xs font-black '+(live?'text-red-600':'text-emerald-700')+'">'+(live?'● AO VIVO':'AGENDADA')+'</span><h3 class="text-xl font-black mt-1">'+esc(x.title)+'</h3><p class="text-slate-500 mt-1">'+esc(x.description||'')+'</p></div><span class="text-xs font-bold text-slate-500">'+(x.scheduled_at?new Date(x.scheduled_at).toLocaleString('pt-BR'):'' )+'</span></div>'+player+'</article>'}).join(''):'<div class="card rounded-3xl p-8 text-center text-slate-500">Nenhuma transmissão agendada ou ao vivo no momento.</div>');
+ section.innerHTML=(rows.length?rows.map(function(x){var live=x.status==='live';var own=S.user&&x.host_user_id===S.user.id;var actions=live?'<button onclick="cmntOpenLive(\''+x.id+'\')" class="bg-[#0b8b55] text-white px-4 py-2.5 rounded-xl font-black">▶ Entrar na live</button>'+(own?'<button onclick="cmntStopLive()" class="bg-red-50 text-red-600 px-4 py-2.5 rounded-xl font-black">Encerrar</button>':''):own?'<button onclick="cmntStartLive(\''+x.id+'\')" class="bg-[#0b8b55] text-white px-4 py-2.5 rounded-xl font-black">🔴 Iniciar</button>':'';return'<article class="card rounded-3xl p-5"><div class="flex flex-wrap items-center justify-between gap-3"><div><span class="text-xs font-black '+(live?'text-red-600':'text-emerald-700')+'">'+(live?'● AO VIVO':'AGENDADA')+'</span><h3 class="text-xl font-black mt-1">'+esc(x.title)+'</h3><p class="text-slate-500 mt-1">'+esc(x.description||'')+'</p><div class="text-xs text-slate-400 mt-2">'+esc(x.category||'Mobilidade')+' · '+(x.allow_chat?'chat ativo':'chat desativado')+' · '+Number(x.viewer_count||0)+' espectadores</div></div><div class="text-right"><div class="text-xs font-bold text-slate-500">'+(x.scheduled_at?new Date(x.scheduled_at).toLocaleString('pt-BR'):'')+'</div><div class="flex flex-wrap gap-2 justify-end mt-3">'+actions+'</div></div></div></article>'}).join(''):'<div class="card rounded-3xl p-8 text-center text-slate-500">Nenhuma transmissão agendada ou ao vivo no momento.</div>');
 }
-function live(){setTimeout(renderLive,0);return'<section><div class="flex flex-wrap items-end justify-between gap-3 mb-5"><div><small class="uppercase tracking-widest text-red-600 font-black">CMNT LIVE</small><h1 class="text-3xl font-black">Transmissões</h1><p class="text-slate-500 mt-1">Aulas, debates, observatório e eventos em vídeo.</p></div>'+(S.user?'<button onclick="createLiveSchedule()" class="bg-[#07111f] text-white px-5 py-3 rounded-2xl font-black">+ Agendar transmissão</button>':'')+'</div><div id="liveData" class="space-y-4"></div></section>'}
+function live(){setTimeout(renderLive,0);return'<section><div class="flex flex-wrap items-end justify-between gap-3 mb-5"><div><small class="uppercase tracking-widest text-red-600 font-black">CMNT LIVE</small><h1 class="text-3xl font-black">Transmissões</h1><p class="text-slate-500 mt-1">Câmera, microfone, vídeo em tempo real, chat, reações e agendamento.</p></div>'+(S.user?'<button onclick="createLiveSchedule()" class="bg-[#07111f] text-white px-5 py-3 rounded-2xl font-black">+ Nova transmissão</button>':'')+'</div><div id="liveData" class="space-y-4"></div></section>'}
 function saved(){var x=S.posts.filter(function(p){return S.saved.has(p.id)});return'<section><h1 class="text-3xl font-black mb-5">Salvos</h1><div class="space-y-4">'+(x.length?x.map(post).join(''):'<div class="card rounded-3xl p-10 text-center text-slate-500">Você ainda não salvou publicações.</div>')+'</div></section>'}
 async function openProfile(id){
   if(!id)return;
