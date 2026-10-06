@@ -393,7 +393,7 @@ async function cmntStopRecording(){
        var title='Gravação — '+new Date(started).toLocaleString('pt-BR');
        var ins=await db.from('social_live_recordings').insert({live_stream_id:CMNT_LIVE.hostStreamId,owner_user_id:S.user.id,title:title,storage_path:path,media_url:mediaUrl,media_type:'video',duration_seconds:Math.max(1,Math.round((Date.now()-started)/1000)),status:'ready'}).select('*').maybeSingle();
        if(ins.error)throw ins.error;
-       toast('Gravação salva. Você pode publicá-la depois.');
+       toast('Gravação salva. Você pode publicá-la depois.');renderLiveRecordings();
        resolve(ins.data);
      }catch(e){
        console.error('CMNT recording upload',e);
