@@ -86,7 +86,7 @@
   ];}
   function nexus(){
     var modules=nexusData();
-    return card('<div class="flex items-start justify-between gap-4"><div><div class="text-xs font-black uppercase tracking-[.16em] text-emerald-700">Matriz de competências</div><h2 class="text-2xl font-black mt-1">NEXUS 12</h2><p class="text-sm text-slate-500 mt-1">Cada competência é um módulo de aprendizagem e acompanhamento. Clique em qualquer módulo para abrir seu conteúdo.</p></div><span class="hidden sm:inline-flex px-3 py-2 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-black">12 módulos</span></div><div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-5">'+modules.map(function(m){return '<button type="button" onclick="cmntNexusOpen(this.dataset.code)" data-code="'+m.code+'" class="group text-left p-4 rounded-2xl bg-slate-50 hover:bg-emerald-50 border border-transparent hover:border-emerald-200 transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"><div class="flex items-center justify-between gap-2"><span class="text-xs font-black text-emerald-700">NEXUS '+m.n+'</span><span class="text-xs font-black text-slate-400 group-hover:text-emerald-700">'+m.code+' →</span></div><h3 class="font-black mt-1">'+m.title+'</h3><p class="text-xs text-slate-500 mt-1">'+m.desc+'</p><span class="inline-block mt-3 text-xs font-black text-emerald-700">Abrir módulo →</span></button>'}).join('')+'</div><button onclick="cmntNexusStart()" class="mt-5 bg-[#0b8b55] text-white px-5 py-3 rounded-xl font-black">Iniciar avaliação NEXUS 12</button>');}
+    return card('<div class="flex items-start justify-between gap-4"><div><div class="text-xs font-black uppercase tracking-[.16em] text-emerald-700">Matriz de competências</div><h2 class="text-2xl font-black mt-1">NEXUS 12</h2><p class="text-sm text-slate-500 mt-1">Cada competência é um módulo de aprendizagem e acompanhamento. Clique em qualquer módulo para abrir seu conteúdo.</p></div><span class="hidden sm:inline-flex px-3 py-2 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-black">12 módulos</span></div><div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-5">'+modules.map(function(m){return '<button type="button" data-cmnt-nexus="'+m.code+'" class="group text-left p-4 rounded-2xl bg-slate-50 hover:bg-emerald-50 border border-transparent hover:border-emerald-200 transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"><div class="flex items-center justify-between gap-2"><span class="text-xs font-black text-emerald-700">NEXUS '+m.n+'</span><span class="text-xs font-black text-slate-400 group-hover:text-emerald-700">'+m.code+' →</span></div><h3 class="font-black mt-1">'+m.title+'</h3><p class="text-xs text-slate-500 mt-1">'+m.desc+'</p><span class="inline-block mt-3 text-xs font-black text-emerald-700">Abrir módulo →</span></button>'}).join('')+'</div><button onclick="cmntNexusStart()" class="mt-5 bg-[#0b8b55] text-white px-5 py-3 rounded-xl font-black">Iniciar avaliação NEXUS 12</button>');}
   function nexusDetail(code){
     var m=nexusData().find(function(x){return x.code===code});
     if(!m)return nexus();
@@ -97,6 +97,16 @@
       card('<h3 class="font-black">Perguntas orientadoras</h3><div class="grid md:grid-cols-3 gap-3 mt-4">'+m.questions.map(function(qt){return '<div class="p-4 rounded-2xl bg-slate-50 text-sm font-semibold text-slate-700">'+qt+'</div>'}).join('')+'</div>')+
       card('<h3 class="font-black">Conexões no ecossistema CMNT</h3><p class="text-sm text-slate-600 mt-2">'+m.related+'</p><div class="mt-4 flex flex-wrap gap-2"><span class="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-black">NEXUS '+m.n+'</span><span class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs font-black">Competência longitudinal</span><span class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs font-black">Mobilidade segura</span></div>')+
       '<div class="flex flex-wrap gap-3 mt-5"><button onclick="cmntNexusAssessModule(\\''+m.code+'\\')" class="bg-[#0b8b55] text-white px-5 py-3 rounded-xl font-black">Avaliar '+m.title+'</button><button onclick="cmntNexusBack()" class="px-5 py-3 rounded-xl bg-slate-100 font-black">Ver os 12 módulos</button></div>';
+  }
+  if(!window.__cmntNexusClickBound){
+    document.addEventListener('click',function(ev){
+      var target=ev.target.closest ? ev.target.closest('[data-cmnt-nexus]') : null;
+      if(!target)return;
+      ev.preventDefault();
+      var code=target.getAttribute('data-cmnt-nexus');
+      if(code)window.cmntNexusOpen(code);
+    });
+    window.__cmntNexusClickBound=true;
   }
   window.cmntNexusOpen=function(code){state.section='nexus-'+code;renderSection();};
   window.cmntNexusBack=function(){state.section='nexus';renderSection();};
