@@ -100,4 +100,18 @@
   window.cmntPlatformGo=async function(s){state.section=s;await refresh();shell()};
   window.go=function(t){if(t==='cmnt'||t==='cmnt-platform'){S.tab='cmnt';state.section='overview';refresh().then(shell);return}return baseGo(t)};
   refresh().then(function(){if(S.tab==='cmnt')shell()});
+
+  window.cmntClassifyPost=function(postId){
+    if(!S.user)return auth();
+    var opts=[['experiencia','Experiência'],['opiniao','Opinião'],['informacao_tecnica','Informação técnica'],['evidencia_cientifica','Evidência científica']];
+    document.getElementById('modal').innerHTML='<div class="fixed inset-0 modal z-[90] grid place-items-center p-4"><div class="bg-white rounded-3xl p-6 w-full max-w-md"><h2 class="text-xl font-black">Classificar conteúdo CMNT</h2><p class="text-sm text-slate-500 mt-2">A classificação não apaga nem altera a publicação original.</p><div class="grid gap-2 mt-4">'+opts.map(function(o){return '<button onclick="cmntSaveClassification(\\''+postId+'\\',\\''+o[0]+'\\')" class="text-left p-3 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold">'+o[1]+'</button>'}).join('')+'</div><button onclick="closeModal()" class="mt-3 px-4 py-2 font-bold">Cancelar</button></div></div>';
+  };
+  window.cmntSaveClassification=async function(postId,type){
+    var status=type==='evidencia_cientifica'?'pending_review':(type==='informacao_tecnica'?'technical':'not_scientific');
+    var r=await db.from('cmnt_content_classifications').upsert({post_id:postId,content_type:type,scientific_status:status,classified_by:S.user.id},{onConflict:'post_id'});
+    if(r.error)return toast(r.error.message,true);
+    var u=await db.from('social_posts').update({cmnt_content_type:type,cmnt_scientific_status:status}).eq('id',postId);
+    if(u.error)return toast(u.error.message,true);
+    closeModal();toast('Classificação CMNT registrada.');await loadPosts();if(S.tab==='home')render();
+  };
 })();
