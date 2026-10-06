@@ -884,7 +884,7 @@ const CMNT_NEXUS_DETAILS=[
  ]
 ];
 
-CMNT_COURSES.nexus12={goal:"Percorrer os 12 pilares do NEXUS 12 como uma trilha de desenvolvimento humano aplicada à mobilidade. Cada pilar combina conteúdo aprofundado, aplicação prática e cinco perguntas de encerramento.",lessons:CMNT_NEXUS_DETAILS.map(function(x){return [x[0],x[1],"Objetivo: desenvolver a competência de "+x[0].toLowerCase()+" aplicada à mobilidade.",x[5],x[6],x[7]]}),activity:"Escolha um pilar por vez, aplique o exercício proposto e registre evidências de aprendizagem. O objetivo é desenvolver competências observáveis, não classificar pessoas de forma definitiva.")};
+CMNT_COURSES.nexus12={goal:"Percorrer os 12 pilares do NEXUS 12 como uma trilha de desenvolvimento humano aplicada à mobilidade. Cada pilar combina conteúdo aprofundado, aplicação prática e cinco perguntas de encerramento.",lessons:CMNT_NEXUS_DETAILS.map(function(x){return [x[0],x[1],"Objetivo: desenvolver a competência de "+x[0].toLowerCase()+" aplicada à mobilidade.",x[5],x[6],x[7]]}),activity:"Escolha um pilar por vez, aplique o exercício proposto e registre evidências de aprendizagem. O objetivo é desenvolver competências observáveis, não classificar pessoas de forma definitiva."};
 
 function cmntCourseProgress(key){try{return JSON.parse(localStorage.getItem("cmnt_course_"+key)||"{}")}catch(e){return{}}}
 function cmntSaveCourseProgress(key,data){try{localStorage.setItem("cmnt_course_"+key,JSON.stringify(data))}catch(e){}}
