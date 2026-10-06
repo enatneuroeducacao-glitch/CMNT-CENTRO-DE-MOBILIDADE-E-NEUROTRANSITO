@@ -311,12 +311,12 @@ async function cmntPublishLiveToFeed(liveId,data,isLive){
 }
 
 function cmntLiveScheduleMarkup(){
- return '<div class="fixed inset-0 modal z-[80] grid place-items-center p-4 overflow-auto">'+
- '<div class="bg-white rounded-3xl shadow-2xl p-5 sm:p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto my-5">'+
- '<div class="flex justify-between items-start gap-4">'+
+ return '<div class="fixed inset-0 modal z-[80] flex items-start justify-center p-4 sm:p-6 pt-[88px] overflow-y-auto">'+
+ '<div class="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[calc(100vh-110px)] overflow-y-auto my-0">'+
+ '<div class="sticky top-0 z-[20] bg-white/95 backdrop-blur border-b border-slate-100 px-5 sm:px-7 py-4 flex justify-between items-start gap-4">'+
  '<div><div class="text-xs uppercase tracking-widest text-red-600 font-black">CMNT LIVE</div><h2 class="text-2xl font-black mt-1">Nova transmissão</h2><p class="text-sm text-slate-500 mt-1">Configure a Live antes de entrar no palco.</p></div>'+
  '<button type="button" onclick="closeModal()" class="shrink-0 w-10 h-10 rounded-xl bg-slate-100 text-slate-500 text-2xl font-black">×</button></div>'+
- '<div class="grid md:grid-cols-2 gap-4 mt-5">'+
+ '<div class="grid lg:grid-cols-2 gap-5 px-5 sm:px-7 py-5">'+
  '<div class="space-y-3">'+
  '<div><label class="text-xs font-black text-slate-600">Tema da Live *</label><input id="liveTheme" class="w-full bg-slate-100 rounded-2xl p-3 mt-1.5" placeholder="Ex.: Neurociência e segurança viária"></div>'+
  '<div><label class="text-xs font-black text-slate-600">Descrição / objetivo</label><textarea id="liveDesc" class="w-full bg-slate-100 rounded-2xl p-3 mt-1.5" rows="4" placeholder="Explique o que será abordado na transmissão."></textarea></div>'+
@@ -332,8 +332,8 @@ function cmntLiveScheduleMarkup(){
  '<div id="liveGuestChips" class="flex flex-wrap gap-2 mt-3 min-h-2"></div></div>'+
  '<label class="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 cursor-pointer"><input id="livePublishFeed" type="checkbox" checked class="mt-1 w-4 h-4"><span><b class="block">Publicar a Live no feed</b><small class="text-emerald-800/80">Cria automaticamente uma publicação com tema, horário, apresentadores e @ dos convidados.</small></span></label>'+
  '</div></div>'+
- '<div class="flex flex-col sm:flex-row gap-3 mt-5"><button type="button" onclick="saveLiveSchedule()" class="flex-1 bg-slate-100 text-slate-800 rounded-2xl p-3 font-black">📅 Agendar Live</button><button type="button" onclick="createLiveNow()" class="flex-1 bg-[#0b8b55] text-white rounded-2xl p-3 font-black">🔴 Transmitir agora</button></div>'+
- '<p class="text-xs text-slate-500 mt-4 leading-5">A câmera e o microfone serão solicitados somente ao iniciar a transmissão. Os convidados selecionados receberão o @ no anúncio da Live; a entrada no palco continua sujeita à aprovação do apresentador.</p>'+
+ '<div class="flex flex-col sm:flex-row gap-3 px-5 sm:px-7 pb-5"><button type="button" onclick="saveLiveSchedule()" class="flex-1 bg-slate-100 text-slate-800 rounded-2xl p-3 font-black">📅 Agendar Live</button><button type="button" onclick="createLiveNow()" class="flex-1 bg-[#0b8b55] text-white rounded-2xl p-3 font-black">🔴 Transmitir agora</button></div>'+
+ '<p class="text-xs text-slate-500 px-5 sm:px-7 pb-5 leading-5">A câmera e o microfone serão solicitados somente ao iniciar a transmissão. Os convidados selecionados receberão o @ no anúncio da Live; a entrada no palco continua sujeita à aprovação do apresentador.</p>'+
  '</div></div>';
 }
 
