@@ -253,13 +253,12 @@ async function createLiveNow(){
 function cmntEnsureHostControls(){
  var status=document.getElementById('cmntRecordStatus');if(!status)return;
  var bar=status.parentElement;if(!bar)return;
- bar.style.display='flex';bar.style.flexWrap='wrap';bar.style.alignItems='center';bar.style.gap='8px';
- function add(id,text,cls,fn){
-  var b=document.getElementById(id);if(!b){b=document.createElement('button');b.id=id;b.type='button';b.textContent=text;b.className=cls;b.onclick=fn;bar.appendChild(b)}
-  b.style.display='inline-flex';b.style.visibility='visible';b.style.opacity='1';
- }
- add('cmntRecordBtn','⏺ Gravar','bg-slate-900 text-white px-4 py-2.5 rounded-xl font-black',function(){cmntStartRecording()});
- add('cmntStopBtn','⏹ Encerrar e fechar','bg-red-600 text-white px-4 py-2.5 rounded-xl font-black',function(){cmntStopLive()});
+ var record=document.getElementById('cmntRecordBtn'),stop=document.getElementById('cmntStopBtn');
+ if(!record){record=document.createElement('button');record.id='cmntRecordBtn';record.type='button';record.textContent='⏺ Gravar';record.onclick=function(){cmntStartRecording()};record.className='bg-slate-900 text-white px-4 py-2.5 rounded-xl font-black';bar.appendChild(record)}
+ if(!stop){stop=document.createElement('button');stop.id='cmntStopBtn';stop.type='button';stop.textContent='⏹ Encerrar e fechar';stop.onclick=function(){cmntStopLive()};stop.className='bg-red-600 text-white px-4 py-2.5 rounded-xl font-black';bar.appendChild(stop)}
+ bar.style.cssText='display:flex!important;flex-wrap:wrap;align-items:center;gap:8px;position:relative;z-index:20;min-height:46px!important';
+ record.style.cssText='display:inline-flex!important;visibility:visible!important;opacity:1!important';
+ stop.style.cssText='display:inline-flex!important;visibility:visible!important;opacity:1!important';
 }
  
 async function cmntStartLive(id){
