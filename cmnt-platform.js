@@ -29,7 +29,7 @@
       ['overview','Visão geral'],['research','Laboratório de pesquisa'],['researcher','Pesquisador'],['evidence','Evidências'],['nexus','NEXUS 12'],
       ['hsi','HSI'],['education','Academia ENAT'],['observatory','Observatório'],['events','Eventos'],['editorial','Editorial'],
       ['communities','Comunidades científicas'],['institutions','Instituições'],['governance','Governança'],['knowledge','Base de conhecimento'],
-      ['integrations','Integrações'],['ai','IA científica']
+      ['integrations','Integrações'],['ai','IA científica'],['admin','Painel administrativo']
     ];
     return items.map(function(x){return '<button onclick="cmntPlatformGo(\''+x[0]+'\')" class="text-left px-3 py-2.5 rounded-xl text-sm font-bold '+(state.section===x[0]?'bg-emerald-100 text-emerald-900':'hover:bg-slate-50 text-slate-600')+'">'+x[1]+'</button>'}).join('')
   }
@@ -52,6 +52,7 @@
     if(state.section==='knowledge')return el.innerHTML=knowledge();
     if(state.section==='integrations')return el.innerHTML=integrations();
     if(state.section==='ai')return el.innerHTML=ai();
+    if(state.section.indexOf('admin')===0){if(!state.admin){await cmntAdminRefresh()}if(state.admin)return cmntAdminRender();return el.innerHTML=card('<h2 class="text-xl font-black">Acesso administrativo</h2><p class="text-sm text-slate-500 mt-2">Entre como administrador para acessar esta área.</p><button onclick="cmntAdminLogin()" class="mt-4 bg-[#07111f] text-white px-4 py-3 rounded-xl font-black">Entrar</button>');}
   }
   function overview(){
     var nums=[['Comunidades científicas',S.communities.length],['Domínios científicos',state.domains.length],['Projetos de pesquisa',state.projects.length],['Fontes aprovadas',state.sources.length],['Instituições',state.institutions.length],['Indicadores',state.indicators.length]];
@@ -97,7 +98,7 @@
   window.cmntNewArticle=function(){if(!S.user)return auth();document.getElementById('modal').innerHTML='<div class="fixed inset-0 modal z-[90] grid place-items-center p-4"><div class="bg-white rounded-3xl p-6 w-full max-w-xl"><h2 class="text-xl font-black">Artigo / nota técnica</h2><input id="ca_title" class="w-full bg-slate-100 rounded-xl p-3 mt-4" placeholder="Título"><textarea id="ca_sum" class="w-full bg-slate-100 rounded-xl p-3 mt-3" rows="3" placeholder="Resumo"></textarea><button onclick="cmntSaveArticle()" class="mt-4 bg-[#0b8b55] text-white px-5 py-3 rounded-xl font-black">Salvar rascunho</button></div></div>'};
   window.cmntSaveArticle=function(){var title=document.getElementById('ca_title').value.trim();saveRow('cmnt_editorial_articles',{title:title,slug:title.toLowerCase().replace(/[^a-z0-9]+/g,'-')+'-'+Date.now(),summary:document.getElementById('ca_sum').value.trim(),author_id:S.user.id,status:'draft'}).then(closeModal)};
   window.cmntNexusStart=function(){if(!S.user)return auth();toast('A avaliação NEXUS será conectada ao instrumento longitudinal na próxima camada.');};
-  window.cmntPlatformGo=async function(s){state.section=s;await refresh();shell()};
+  window.cmntPlatformGo=async function(s){state.section=s;if(s.indexOf('admin')===0){await cmntAdminRefresh();if(!state.admin)return cmntAdminLogin();cmntAdminRender();return}await refresh();shell()};
   window.go=function(t){if(t==='cmnt'||t==='cmnt-platform'){S.tab='cmnt';state.section='overview';refresh().then(shell);return}return baseGo(t)};
   refresh().then(function(){if(S.tab==='cmnt')shell()});
 
@@ -225,4 +226,6 @@
     else if(state.section==='admin-users')b.innerHTML=adminUsers();
     else await adminModeration();
   };
+
+  setTimeout(function(){if(S.user)cmntCheckAdminAccess()},1200);
 })();
