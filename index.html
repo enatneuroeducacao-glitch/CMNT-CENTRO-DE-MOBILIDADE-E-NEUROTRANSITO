@@ -319,14 +319,19 @@ if(db){db.auth.onAuthStateChange(function(){setTimeout(init,0)});init()}
 <script>
 async function openNeuroDriveCourseAccess(){
   if(!S.user){auth();return}
-  var result=await db.rpc('neurodrive_issue_course_access',{p_course_code:'ENAT-CURSO-002'});
-  if(result.error){
-    toast('Não foi possível abrir o curso NeuroDrive: '+(result.error.message||'acesso não autorizado'),true);
-    return;
+  try{
+    var result=await db.functions.invoke('neurodrive-course-access',{body:{action:'issue_courses'}});
+    if(result.error){
+      var msg=(result.data&&result.data.error)||result.error.message||'acesso não autorizado';
+      toast('Não foi possível abrir os cursos NeuroDrive: '+msg,true);
+      return;
+    }
+    var ticket=result.data&&result.data.ticket;
+    if(!ticket){toast('A autorização dos cursos não foi gerada.',true);return}
+    window.location.href='https://neurodrive.hsi-doth-pg.com.br/?access='+encodeURIComponent(ticket);
+  }catch(err){
+    toast('Não foi possível abrir os cursos NeuroDrive. Tente novamente.',true);
   }
-  var ticket=result.data&&result.data.ticket;
-  if(!ticket){toast('A autorização do curso não foi gerada.',true);return}
-  window.location.href='https://hsi-doth-pg.com.br/cursos#access='+encodeURIComponent(ticket);
 }
 (function(){
   function bindNeuroDriveButtons(){
