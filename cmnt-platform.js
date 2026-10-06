@@ -126,9 +126,15 @@
   }
   async function cmntAdminRefresh(){
     if(!S.user){state.admin=false;state.adminInfo=null;return}
-    try{var me=await adminInvoke('me');state.admin=true;state.adminInfo=me.admin;
-      var [a,l]=await Promise.all([adminInvoke('list'),adminInvoke('audit')]);
-      state.admins=a.admins||[];state.audit=l.logs||[];
+    try{
+      var ar=await db.rpc('cmnt_is_admin');state.admin=!!ar.data;
+      if(!state.admin)return;
+      var [me,a,l]=await Promise.all([
+        db.from('cmnt_admin_users').select('*').eq('user_id',S.user.id).maybeSingle(),
+        db.from('cmnt_admin_users').select('*').order('created_at'),
+        db.from('cmnt_admin_audit_log').select('*').order('created_at',{ascending:false}).limit(200)
+      ]);
+      if(me.error)throw me.error;state.adminInfo=me.data;state.admins=a.data||[];state.audit=l.data||[];
     }catch(e){state.admin=false;state.adminInfo=null}
   }
   window.cmntAdminLogin=function(){
