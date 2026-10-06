@@ -95,9 +95,52 @@ window.cmntSaveSource=async function(){
 };
 
 async function cmntNexus(p){
- var r=await db.from('cmnt_nexus_competencies').select('*').order('position');
- var cards=(r.data||[]).map(function(x){return '<div class="card rounded-3xl p-4"><div class="flex justify-between"><b>'+x.position+'. '+escx(x.name)+'</b><span class="text-emerald-700 font-black">'+escx(x.code)+'</span></div><p class="text-sm text-slate-500 mt-2">'+escx(x.description)+'</p></div>'}).join('');
- p.innerHTML='<div class="card rounded-3xl p-6"><div class="text-xs uppercase tracking-widest text-emerald-700 font-black">NEXUS 12</div><h2 class="text-2xl font-black mt-1">Competências humanas para mobilidade segura</h2><p class="text-slate-600 mt-2">A matriz NEXUS passa a ser uma camada mensurável da plataforma, preparada para avaliações e evolução longitudinal.</p><div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-5">'+cards+'</div><div class="mt-5 p-4 rounded-2xl bg-amber-50 text-amber-900 text-sm">A aplicação de instrumentos psicométricos, coleta de dados de pesquisa e interpretação científica deve seguir protocolo, consentimento e governança ética adequados ao estudo.</div></div>';
+  var r=await db.from('cmnt_nexus_competencies').select('*').order('position');
+  var rows=r.data||[];
+  window.__cmntNexusScientificRows=rows;
+  var modules=typeof window.cmntNexusData==='function' ? window.cmntNexusData() : rows.map(function(x){return {code:x.code,n:x.position,title:x.name,desc:x.description,subject:'Competência NEXUS '+x.code+'.',practice:'Aplicação prática no contexto da mobilidade segura.',questions:['Como esta competência aparece no trânsito?','Que risco humano ela ajuda a reduzir?','Como pode ser desenvolvida e acompanhada?'],related:'CMNT • HSI • NeuroDrive • ENAT'}}); 
+  var byCode={};rows.forEach(function(x){byCode[x.code]=x});
+  var cards=modules.map(function(m){
+    var dbRow=byCode[m.code]||{};
+    return '<button type="button" data-cmnt-scientific-nexus="'+escx(m.code)+'" class="card text-left rounded-3xl p-5 hover:shadow-xl hover:border-emerald-200 border border-transparent transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-300">'+
+      '<div class="flex items-center justify-between"><span class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 grid place-items-center font-black">'+escx(m.n||dbRow.position)+'</span><span class="text-emerald-700 font-black text-sm">'+escx(m.code)+'</span></div>'+
+      '<h3 class="font-black text-lg mt-4">'+escx(m.title||dbRow.name)+'</h3>'+
+      '<p class="text-sm text-slate-500 mt-2 leading-6">'+escx(m.desc||dbRow.description)+'</p>'+
+      '<span class="inline-block mt-3 text-xs font-black text-emerald-700">Abrir módulo →</span>'+
+    '</button>';
+  }).join('');
+  p.innerHTML='<div class="card rounded-3xl p-6"><div class="text-xs uppercase tracking-widest text-emerald-700 font-black">NEXUS 12</div><h2 class="text-2xl font-black mt-1">Competências humanas para mobilidade segura</h2><p class="text-slate-600 mt-2">Cada competência é um módulo de aprendizagem e acompanhamento. Clique em qualquer módulo para abrir o assunto relacionado.</p><div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-5">'+cards+'</div><div class="mt-5 p-4 rounded-2xl bg-amber-50 text-amber-900 text-sm">A aplicação de instrumentos psicométricos, coleta de dados de pesquisa e interpretação científica deve seguir protocolo, consentimento e governança ética adequados ao estudo.</div></div>';
+}
+window.cmntNexusModule=function(code){
+  var p=document.getElementById('cmnt-panel'); if(!p)return;
+  var rows=window.__cmntNexusScientificRows||[];
+  var dbRow=rows.find(function(x){return x.code===code})||{};
+  var modules=typeof window.cmntNexusData==='function' ? window.cmntNexusData() : [];
+  var m=modules.find(function(x){return x.code===code})||{code:code,n:dbRow.position,title:dbRow.name,desc:dbRow.description,subject:'Competência NEXUS '+code+'.',practice:'Aplicação prática no contexto da mobilidade segura.',questions:['Como esta competência aparece no trânsito?','Que risco humano ela ajuda a reduzir?','Como pode ser desenvolvida e acompanhada?'],related:'CMNT • HSI • NeuroDrive • ENAT'};
+  if(!m.title)return cmntNexus(p);
+  p.innerHTML='<div class="mb-4"><button type="button" onclick="cmntTab(\'nexus\')" class="text-sm font-black text-emerald-700 hover:text-emerald-900">← Voltar para NEXUS 12</button></div>'+
+    '<div class="card rounded-3xl p-6">'+
+      '<div class="text-xs font-black uppercase tracking-[.16em] text-emerald-700">NEXUS '+escx(m.n)+' • '+escx(m.code)+'</div>'+
+      '<h2 class="text-3xl font-black mt-2">'+escx(m.title)+'</h2>'+
+      '<p class="text-base text-slate-600 mt-2 leading-7">'+escx(m.desc)+'</p>'+
+      '<div class="grid md:grid-cols-2 gap-4 mt-6">'+
+        '<div class="p-5 rounded-2xl bg-slate-50"><h3 class="font-black">O que este módulo desenvolve?</h3><p class="text-sm text-slate-600 mt-2 leading-6">'+escx(m.subject)+'</p></div>'+
+        '<div class="p-5 rounded-2xl bg-slate-50"><h3 class="font-black">Aplicação no trânsito</h3><p class="text-sm text-slate-600 mt-2 leading-6">'+escx(m.practice)+'</p></div>'+
+      '</div>'+
+      '<div class="p-5 rounded-2xl bg-emerald-50 mt-4"><h3 class="font-black text-emerald-900">Perguntas orientadoras</h3><ul class="mt-3 space-y-2 text-sm text-emerald-950">'+(m.questions||[]).map(function(q){return '<li>• '+escx(q)+'</li>'}).join('')+'</ul></div>'+
+      '<div class="p-5 rounded-2xl border border-slate-200 mt-4"><h3 class="font-black">Conexões no ecossistema CMNT</h3><p class="text-sm text-slate-600 mt-2 leading-6">'+escx(m.related)+'</p></div>'+
+      '<div class="flex flex-wrap gap-3 mt-5"><button type="button" onclick="cmntNexusStart()" class="bg-[#0b8b55] text-white px-5 py-3 rounded-xl font-black">Avaliar '+escx(m.title)+'</button><button type="button" onclick="cmntTab(\'nexus\')" class="px-5 py-3 rounded-xl bg-slate-100 font-black">Ver os 12 módulos</button></div>'+
+    '</div>';
+};
+if(!window.__cmntScientificNexusBound){
+  document.addEventListener('click',function(ev){
+    var target=ev.target.closest ? ev.target.closest('[data-cmnt-scientific-nexus]') : null;
+    if(!target)return;
+    ev.preventDefault();
+    var code=target.getAttribute('data-cmnt-scientific-nexus');
+    if(code&&window.cmntNexusModule)window.cmntNexusModule(code);
+  });
+  window.__cmntScientificNexusBound=true;
 }
 
 window.communities=function(){
