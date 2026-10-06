@@ -321,3 +321,20 @@
     }
   };
 })();
+
+/* CMNT live Academia ENAT catalog integration. */
+(function(){
+  'use strict';
+  var prev=window.cmntPlatformGo;
+  window.cmntPlatformGo=async function(section){
+    await prev(section);
+    if(section!=='education')return;
+    var body=document.getElementById('cmnt-platform-body');if(!body)return;
+    var r=await db.from('enat_courses').select('id,name,code,summary,category,hours,modality,version,slug,thumbnail_url').eq('published',true).eq('active',true).order('name');
+    var courses=r.data||[];
+    var box='<div class="mt-4 card rounded-3xl p-5"><div class="flex items-center justify-between gap-3"><div><h3 class="font-black text-lg">Catálogo ENAT conectado</h3><p class="text-sm text-slate-500 mt-1">Cursos publicados pela Academia ENAT, apresentados dentro do ecossistema CMNT.</p></div><span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-black">'+courses.length+' curso(s)</span></div>';
+    if(courses.length)box+='<div class="grid md:grid-cols-2 gap-3 mt-4">'+courses.map(function(c){return '<article class="p-4 rounded-2xl bg-slate-50"><div class="text-xs font-black text-emerald-700">'+(c.code||'ENAT')+' · '+(c.hours||0)+' h</div><h4 class="font-black mt-1">'+String(c.name||'').replace(/[&<>]/g,function(x){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[x]})+'</h4><p class="text-sm text-slate-600 mt-2">'+String(c.summary||'').slice(0,180)+'</p><div class="text-xs text-slate-500 mt-3">'+(c.modality||'')+' · v'+(c.version||1)+'</div></article>'}).join('')+'</div>';
+    else box+='<div class="mt-4 p-4 rounded-2xl bg-slate-50 text-sm text-slate-600">Nenhum curso publicado no momento. A integração está ativa e aguardando o catálogo.</div>';
+    body.insertAdjacentHTML('beforeend',box+'</div>');
+  };
+})();
