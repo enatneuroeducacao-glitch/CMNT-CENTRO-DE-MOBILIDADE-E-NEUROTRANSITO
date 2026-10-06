@@ -1,0 +1,41 @@
+name: CMNT Docker Validation
+
+on:
+  push:
+    branches:
+      - main
+      - feature/cmnt-neurocientifico
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t cmnt-neurotransito:test .
+
+      - name: Start container
+        run: docker run -d --name cmnt-neurotransito-test -p 8080:80 cmnt-neurotransito:test
+
+      - name: Health check
+        run: |
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:8080/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs cmnt-neurotransito-test
+          exit 1
+
+      - name: Validate application
+        run: curl -fsS http://127.0.0.1:8080/ | grep -q "ENAT"
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f cmnt-neurotransito-test || true

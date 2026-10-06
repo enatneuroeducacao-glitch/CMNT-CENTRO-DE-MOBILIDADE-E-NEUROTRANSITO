@@ -1,0 +1,19 @@
+name: CMNT JS Syntax Check
+on:
+  pull_request:
+    branches: ["feature/cmnt-neurocientifico"]
+  push:
+    branches: ["feature/cmnt-neurocientifico"]
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check JavaScript syntax
+        run: |
+          node --check cmnt-platform.js
+          node --check cmnt-scientific.js
+          node --check cmnt-observatory.js
