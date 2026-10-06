@@ -91,13 +91,21 @@
   function nexusDetail(code){
     var m=nexusData().find(function(x){return x.code===code});
     if(!m)return nexus();
-    return '<div class="mb-4"><button onclick="cmntNexusBack()" class="text-sm font-black text-emerald-700 hover:text-emerald-900">← Voltar para NEXUS 12</button></div>'+
-      card('<div class="flex items-start justify-between gap-4"><div><span class="text-xs font-black uppercase tracking-[.16em] text-emerald-700">NEXUS '+m.n+' • '+m.code+'</span><h2 class="text-3xl font-black mt-2">'+m.title+'</h2><p class="text-base text-slate-600 mt-2">'+m.desc+'</p></div><div class="hidden sm:grid place-items-center w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-800 font-black text-lg">'+m.n+'</div></div>'+
-      '<div class="grid md:grid-cols-2 gap-4 mt-6">'+card('<h3 class="font-black">O que este módulo desenvolve?</h3><p class="text-sm text-slate-600 mt-2 leading-6">'+m.subject+'</p>')+
-      card('<h3 class="font-black">Aplicação no trânsito</h3><p class="text-sm text-slate-600 mt-2 leading-6">'+m.practice+'</p>')+'</div>'+
-      card('<h3 class="font-black">Perguntas orientadoras</h3><div class="grid md:grid-cols-3 gap-3 mt-4">'+m.questions.map(function(qt){return '<div class="p-4 rounded-2xl bg-slate-50 text-sm font-semibold text-slate-700">'+qt+'</div>'}).join('')+'</div>')+
-      card('<h3 class="font-black">Conexões no ecossistema CMNT</h3><p class="text-sm text-slate-600 mt-2">'+m.related+'</p><div class="mt-4 flex flex-wrap gap-2"><span class="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-black">NEXUS '+m.n+'</span><span class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs font-black">Competência longitudinal</span><span class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs font-black">Mobilidade segura</span></div>')+
-      '<div class="flex flex-wrap gap-3 mt-5"><button type="button" onclick="cmntNexusAssessModule()" class="bg-[#0b8b55] text-white px-5 py-3 rounded-xl font-black">Avaliar '+m.title+'</button><button type="button" onclick="cmntNexusBack()" class="px-5 py-3 rounded-xl bg-slate-100 font-black">Ver os 12 módulos</button></div>';
+    var questions=(m.questions||[]).map(function(qt){return '<div class="p-4 rounded-2xl bg-slate-50 text-sm font-semibold text-slate-700">'+qt+'</div>'}).join('');
+    return `<div class="mb-4"><button type="button" onclick="cmntNexusBack()" class="text-sm font-black text-emerald-700 hover:text-emerald-900">← Voltar para NEXUS 12</button></div>
+      <div class="card rounded-3xl p-6">
+        <div class="flex items-start justify-between gap-4">
+          <div><span class="text-xs font-black uppercase tracking-[.16em] text-emerald-700">NEXUS ${m.n} • ${m.code}</span><h2 class="text-3xl font-black mt-2">${m.title}</h2><p class="text-base text-slate-600 mt-2">${m.desc}</p></div>
+          <div class="hidden sm:grid place-items-center w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-800 font-black text-lg">${m.n}</div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4 mt-6">
+          <div class="p-5 rounded-2xl bg-slate-50"><h3 class="font-black">O que este módulo desenvolve?</h3><p class="text-sm text-slate-600 mt-2 leading-6">${m.subject}</p></div>
+          <div class="p-5 rounded-2xl bg-slate-50"><h3 class="font-black">Aplicação no trânsito</h3><p class="text-sm text-slate-600 mt-2 leading-6">${m.practice}</p></div>
+        </div>
+        <div class="p-5 rounded-2xl bg-emerald-50 mt-4"><h3 class="font-black text-emerald-900">Perguntas orientadoras</h3><div class="grid md:grid-cols-3 gap-3 mt-4">${questions}</div></div>
+        <div class="p-5 rounded-2xl border border-slate-200 mt-4"><h3 class="font-black">Conexões no ecossistema CMNT</h3><p class="text-sm text-slate-600 mt-2 leading-6">${m.related}</p></div>
+        <div class="flex flex-wrap gap-3 mt-5"><button type="button" onclick="cmntNexusAssessModule()" class="bg-[#0b8b55] text-white px-5 py-3 rounded-xl font-black">Avaliar ${m.title}</button><button type="button" onclick="cmntNexusBack()" class="px-5 py-3 rounded-xl bg-slate-100 font-black">Ver os 12 módulos</button></div>
+      </div>`;
   }
   if(!window.__cmntNexusClickBound){
     document.addEventListener('click',function(ev){
