@@ -201,7 +201,7 @@
     var login=document.getElementById('adm_login').value.trim(),pass=document.getElementById('adm_pass').value;
     if(!login||!pass)return toast('Informe usuário e senha.',true);
     if(login.toLowerCase()==='admin'){
-      try{await adminInvoke('bootstrap',{username:'admin',password:'admin'})}catch(e){if(!/já existe/i.test(e.message)){}}
+      try{await adminInvoke('bootstrap',{username:'admin',password:'admin'})}catch(e){if(!/já existe|já foi criado/i.test(e.message))return toast('Falha ao inicializar o acesso administrativo: '+e.message,true)}
       login='admin@cmnt.local';
     }
     var r=await db.auth.signInWithPassword({email:login,password:pass});
