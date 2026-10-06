@@ -114,4 +114,115 @@
     if(u.error)return toast(u.error.message,true);
     closeModal();toast('Classificação CMNT registrada.');await loadPosts();if(S.tab==='home')render();
   };
+
+  state.adminInfo=null;state.admins=[];state.audit=[];
+  async function adminInvoke(action,payload){
+    var body=Object.assign({action:action},payload||{});
+    var r=await db.functions.invoke('cmnt-admin',{body:body});
+    if(r.error)throw new Error(r.error.message||'Falha no serviço administrativo');
+    if(r.data&&r.data.error)throw new Error(r.data.error);
+    return r.data;
+  }
+  async function cmntAdminRefresh(){
+    if(!S.user){state.admin=false;state.adminInfo=null;return}
+    try{var me=await adminInvoke('me');state.admin=true;state.adminInfo=me.admin;
+      var [a,l]=await Promise.all([adminInvoke('list'),adminInvoke('audit')]);
+      state.admins=a.admins||[];state.audit=l.logs||[];
+    }catch(e){state.admin=false;state.adminInfo=null}
+  }
+  window.cmntAdminLogin=function(){
+    document.getElementById('modal').innerHTML='<div class="fixed inset-0 modal z-[95] grid place-items-center p-4"><div class="bg-white rounded-3xl p-6 w-full max-w-md"><div class="text-xs uppercase tracking-widest text-emerald-700 font-black">CMNT • Administração</div><h2 class="text-2xl font-black mt-1">Acesso administrativo</h2><p class="text-sm text-slate-500 mt-2">Primeiro acesso: <b>admin / admin</b>. A troca da senha será obrigatória.</p><input id="adm_login" class="w-full bg-slate-100 rounded-xl p-3 mt-5" placeholder="Usuário ou e-mail"><input id="adm_pass" type="password" class="w-full bg-slate-100 rounded-xl p-3 mt-3" placeholder="Senha"><button onclick="cmntDoAdminLogin()" class="w-full bg-[#07111f] text-white rounded-xl p-3 mt-4 font-black">Entrar no painel</button><button onclick="auth()" class="w-full p-2 mt-2 text-sm text-slate-500">Voltar</button></div></div>';
+  };
+  window.cmntDoAdminLogin=async function(){
+    var login=document.getElementById('adm_login').value.trim(),pass=document.getElementById('adm_pass').value;
+    if(!login||!pass)return toast('Informe usuário e senha.',true);
+    if(login.toLowerCase()==='admin'){
+      try{await adminInvoke('bootstrap',{username:'admin',password:'admin'})}catch(e){if(!/já existe/i.test(e.message)){}}
+      login='admin@cmnt.local';
+    }
+    var r=await db.auth.signInWithPassword({email:login,password:pass});
+    if(r.error)return toast('Acesso administrativo recusado: '+r.error.message,true);
+    closeModal();await init();setTimeout(cmntCheckAdminAccess,400);
+  };
+  window.cmntCheckAdminAccess=async function(){
+    if(!S.user)return;
+    await cmntAdminRefresh();
+    if(state.adminInfo&&state.adminInfo.must_change_password)cmntForcePasswordChange();
+  };
+  window.cmntForcePasswordChange=function(){
+    document.getElementById('modal').innerHTML='<div class="fixed inset-0 modal z-[100] grid place-items-center p-4"><div class="bg-white rounded-3xl p-6 w-full max-w-md"><div class="text-xs uppercase tracking-widest text-red-600 font-black">Segurança obrigatória</div><h2 class="text-2xl font-black mt-1">Troque sua senha</h2><p class="text-sm text-slate-500 mt-2">Esta é uma senha temporária. O acesso ao painel permanece bloqueado até a definição de uma nova senha.</p><input id="adm_newpass" type="password" class="w-full bg-slate-100 rounded-xl p-3 mt-5" placeholder="Nova senha (mínimo 8 caracteres)"><input id="adm_newpass2" type="password" class="w-full bg-slate-100 rounded-xl p-3 mt-3" placeholder="Repita a nova senha"><button onclick="cmntChangeOwnPassword()" class="w-full bg-[#0b8b55] text-white rounded-xl p-3 mt-4 font-black">Definir nova senha</button></div></div>';
+  };
+  window.cmntChangeOwnPassword=async function(){
+    var a=document.getElementById('adm_newpass').value,b=document.getElementById('adm_newpass2').value;
+    if(a.length<8)return toast('A nova senha deve ter pelo menos 8 caracteres.',true);
+    if(a!==b)return toast('As senhas não coincidem.',true);
+    var r=await db.auth.updateUser({password:a});
+    if(r.error)return toast(r.error.message,true);
+    try{await adminInvoke('mark_password_changed')}catch(e){return toast(e.message,true)}
+    closeModal();toast('Senha alterada. O acesso administrativo foi liberado.');await cmntAdminRefresh();cmntAdminRender();
+  };
+  function adminBtn(section,label){return '<button onclick="cmntPlatformGo(\\''+section+'\\')" class="text-left px-3 py-2 rounded-xl text-sm font-bold '+(state.section===section?'bg-emerald-100 text-emerald-900':'hover:bg-slate-50')+'">'+label+'</button>'}
+  function adminCard(title,body){return '<div class="card rounded-3xl p-5"><h3 class="font-black text-lg">'+title+'</h3>'+body+'</div>'}
+  function adminActionButton(label,fn,cls){return '<button onclick="'+fn+'" class="px-3 py-2 rounded-xl text-xs font-black '+(cls||'bg-slate-100')+'">'+label+'</button>'}
+  function adminHome(){
+    var cards=[['Administradores',state.admins.length],['Comunidades',S.communities.length],['Pesquisas',state.projects.length],['Fontes',state.sources.length],['Instituições',state.institutions.length],['Eventos',state.events.length],['Artigos',state.articles.length],['Indicadores',state.indicators.length]];
+    return '<div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">'+cards.map(function(x){return adminCard(x[0],'<div class="text-3xl font-black mt-2">'+x[1]+'</div>')}).join('')+'</div>'+
+      adminCard('Centro de comando','<p class="text-sm text-slate-600 mt-2">O painel controla governança, pessoas, comunidades, pesquisa, evidências, ética, editorial, observatório, eventos, instituições, integrações e auditoria.</p><div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-2 mt-4">'+adminBtn('admin-users','Administradores')+adminBtn('admin-communities','Comunidades')+adminBtn('admin-research','Pesquisa')+adminBtn('admin-evidence','Evidências')+adminBtn('admin-ethics','Ética')+adminBtn('admin-editorial','Editorial')+adminBtn('admin-observatory','Observatório')+adminBtn('admin-audit','Auditoria')+'</div>');
+  }
+  function adminUsers(){
+    return '<div class="flex justify-between items-center mb-4"><div><h2 class="text-2xl font-black">Administradores</h2><p class="text-sm text-slate-500">Criação, ativação, bloqueio e redefinição de senha.</p></div><button onclick="cmntNewAdmin()" class="bg-[#07111f] text-white px-4 py-2.5 rounded-xl font-black">+ Novo administrador</button></div><div class="space-y-3">'+state.admins.map(function(a){return adminCard(q(a.display_name||a.username),'<div class="text-sm text-slate-500 mt-1">@'+q(a.username)+' · '+q(a.email||'')+'</div><div class="flex flex-wrap gap-2 mt-3">'+badge(a.active?'Ativo':'Bloqueado')+' '+badge(a.must_change_password?'Troca obrigatória':'Senha definida')+'</div><div class="flex flex-wrap gap-2 mt-3">'+(a.user_id===S.user.id?'':adminActionButton(a.active?'Bloquear':'Ativar','cmntToggleAdmin(\\''+a.user_id+'\\','+(a.active?'false':'true')+')',a.active?'bg-red-50 text-red-700':'bg-emerald-50 text-emerald-700'))+adminActionButton('Redefinir senha','cmntResetAdmin(\\''+a.user_id+'\\')','bg-amber-50 text-amber-800')+'</div>')}).join('')+'</div>';
+  }
+  window.cmntNewAdmin=function(){
+    document.getElementById('modal').innerHTML='<div class="fixed inset-0 modal z-[95] grid place-items-center p-4"><div class="bg-white rounded-3xl p-6 w-full max-w-lg"><h2 class="text-xl font-black">Novo administrador</h2><input id="na_user" class="w-full bg-slate-100 rounded-xl p-3 mt-4" placeholder="Usuário"><input id="na_name" class="w-full bg-slate-100 rounded-xl p-3 mt-3" placeholder="Nome"><input id="na_email" type="email" class="w-full bg-slate-100 rounded-xl p-3 mt-3" placeholder="E-mail"><input id="na_pass" type="password" class="w-full bg-slate-100 rounded-xl p-3 mt-3" placeholder="Senha temporária (mínimo 8)"><p class="text-xs text-slate-500 mt-2">O novo administrador será obrigado a trocar a senha no primeiro acesso.</p><button onclick="cmntSaveAdmin()" class="w-full bg-[#0b8b55] text-white rounded-xl p-3 mt-4 font-black">Criar administrador</button></div></div>';
+  };
+  window.cmntSaveAdmin=async function(){
+    var username=document.getElementById('na_user').value.trim(),name=document.getElementById('na_name').value.trim(),email=document.getElementById('na_email').value.trim(),pass=document.getElementById('na_pass').value;
+    if(!username||!email||pass.length<8)return toast('Preencha usuário, e-mail e senha com pelo menos 8 caracteres.',true);
+    try{await adminInvoke('create',{username:username,display_name:name||username,email:email,password:pass});closeModal();toast('Administrador criado. A senha temporária deverá ser trocada no primeiro acesso.');await cmntAdminRefresh();cmntAdminRender()}catch(e){toast(e.message,true)}
+  };
+  window.cmntToggleAdmin=async function(id,active){try{await adminInvoke('toggle',{user_id:id,active:active});toast(active?'Administrador ativado.':'Administrador bloqueado.');await cmntAdminRefresh();cmntAdminRender()}catch(e){toast(e.message,true)}};
+  window.cmntResetAdmin=async function(id){var p=prompt('Informe a nova senha temporária (mínimo 8 caracteres):');if(!p)return;if(p.length<8)return toast('A senha precisa ter pelo menos 8 caracteres.',true);try{await adminInvoke('reset_password',{user_id:id,password:p});toast('Senha redefinida e troca obrigatória reativada.');await cmntAdminRefresh();cmntAdminRender()}catch(e){toast(e.message,true)}};
+  async function adminRows(table,select,order,col,action){
+    var r=await db.from(table).select(select).order(order||'created_at',{ascending:false});if(r.error)return '<div class="text-red-600 text-sm">'+q(r.error.message)+'</div>';
+    return (r.data||[]).map(function(x){return action(x)}).join('')||'<div class="text-slate-400 text-sm py-8 text-center">Nenhum registro.</div>';
+  }
+  async function adminModeration(){
+    var b=document.getElementById('cmnt-admin-body');if(!b)return;
+    if(state.section==='admin-communities'){
+      var r=await db.from('social_communities').select('id,name,category,community_type,governance_status,requires_scientific_moderation,scientific_purpose,scientific_scope').order('name');
+      b.innerHTML='<div class="space-y-3">'+(r.data||[]).map(function(x){return adminCard(q(x.name),'<div class="text-sm text-slate-500">'+q(x.category||'')+' · '+q(x.community_type||'')+' · '+q(x.governance_status||'')+'</div><p class="text-sm mt-2">'+q(x.scientific_purpose||'Sem propósito científico definido.')+'</p><div class="mt-3">'+badge(x.requires_scientific_moderation?'Moderação científica':'Padrão')+'</div>')}).join('')+'</div>';
+    } else if(state.section==='admin-research'){
+      var r=await db.from('cmnt_research_projects').select('id,title,status,ethics_status,study_type,created_at').order('created_at',{ascending:false});
+      b.innerHTML='<div class="space-y-3">'+(r.data||[]).map(function(x){return adminCard(q(x.title),'<div class="flex gap-2 mt-2">'+badge(x.status)+' '+badge(x.ethics_status)+'</div><div class="flex gap-2 mt-3">'+adminActionButton('Aprovar','cmntModerateResearch(\\''+x.id+'\\',\\'approved\\')','bg-emerald-50 text-emerald-800')+adminActionButton('Em revisão','cmntModerateResearch(\\''+x.id+'\\',\\'review\\')')+'</div>')}).join('')||'<div class="text-slate-400 text-center py-8">Nenhum projeto.</div></div>';
+    } else if(state.section==='admin-evidence'){
+      var r=await db.from('cmnt_scientific_sources').select('id,title,review_status,evidence_level,doi,pmid,publication_year').order('created_at',{ascending:false});
+      b.innerHTML='<div class="space-y-3">'+(r.data||[]).map(function(x){return adminCard(q(x.title),'<div class="text-sm text-slate-500">'+q(x.doi||x.pmid||'')+' · '+q(x.publication_year||'')+'</div><div class="flex gap-2 mt-2">'+badge(x.review_status||'unreviewed')+' '+badge(x.evidence_level||'não classificada')+'</div><div class="flex gap-2 mt-3">'+adminActionButton('Aprovar','cmntModerateSource(\\''+x.id+'\\',\\'approved\\')','bg-emerald-50 text-emerald-800')+adminActionButton('Rejeitar','cmntModerateSource(\\''+x.id+'\\',\\'rejected\\')','bg-red-50 text-red-700')+'</div>')}).join('')||'<div class="text-slate-400 text-center py-8">Nenhuma fonte.</div></div>';
+    } else if(state.section==='admin-ethics'){
+      var r=await db.from('cmnt_ethics_reviews').select('id,project_id,status,review_type,reference_code,decision_notes,created_at').order('created_at',{ascending:false});
+      b.innerHTML='<div class="space-y-3">'+(r.data||[]).map(function(x){return adminCard('Revisão ética', '<div class="text-sm text-slate-500">Projeto: '+q(x.project_id)+' · '+q(x.review_type)+'</div><div class="mt-2">'+badge(x.status)+'</div><div class="flex gap-2 mt-3">'+adminActionButton('Aprovar','cmntModerateEthics(\\''+x.id+'\\',\\'approved\\')','bg-emerald-50 text-emerald-800')+adminActionButton('Pendenciar','cmntModerateEthics(\\''+x.id+'\\',\\'pending\\')')+'</div>')}).join('')||'<div class="text-slate-400 text-center py-8">Nenhuma revisão ética.</div></div>';
+    } else if(state.section==='admin-editorial'){
+      var r=await db.from('cmnt_editorial_articles').select('id,title,status,article_type,created_at').order('created_at',{ascending:false});
+      b.innerHTML='<div class="space-y-3">'+(r.data||[]).map(function(x){return adminCard(q(x.title),'<div class="mt-2">'+badge(x.status)+'</div><div class="flex gap-2 mt-3">'+adminActionButton('Publicar','cmntModerateArticle(\\''+x.id+'\\',\\'published\\')','bg-emerald-50 text-emerald-800')+adminActionButton('Rascunho','cmntModerateArticle(\\''+x.id+'\\',\\'draft\\')')+'</div>')}).join('')||'<div class="text-slate-400 text-center py-8">Nenhum artigo.</div></div>';
+    } else if(state.section==='admin-observatory'){
+      var r=await db.from('cmnt_observatory_data').select('id,indicator_id,period_start,period_end,geography_level,geography_code,value,quality_status,published').order('period_start',{ascending:false});
+      b.innerHTML='<div class="space-y-3">'+(r.data||[]).map(function(x){return adminCard(q(x.geography_level)+' · '+q(x.period_start),'<div class="text-2xl font-black mt-2">'+q(x.value)+'</div><div class="mt-2">'+badge(x.quality_status)+' '+badge(x.published?'Publicado':'Rascunho')+'</div><div class="mt-3">'+adminActionButton(x.published?'Retirar publicação':'Publicar','cmntToggleObs(\\''+x.id+'\\','+(!x.published)+')',x.published?'bg-red-50 text-red-700':'bg-emerald-50 text-emerald-800')+'</div>')}).join('')||'<div class="text-slate-400 text-center py-8">Nenhum dado no observatório.</div></div>';
+    } else if(state.section==='admin-audit'){
+      b.innerHTML='<div class="space-y-2">'+state.audit.map(function(x){return '<div class="p-4 rounded-2xl bg-slate-50"><div class="font-bold">'+q(x.action)+'</div><div class="text-xs text-slate-500 mt-1">'+q(x.created_at)+' · '+q(x.target_user_id||'sistema')+'</div></div>'}).join('')||'<div class="text-slate-400 text-center py-8">Sem eventos.</div></div>';
+    }
+  }
+  window.cmntModerateResearch=async function(id,status){var r=await db.from('cmnt_research_projects').update({status}).eq('id',id);if(r.error)return toast(r.error.message,true);toast('Projeto atualizado.');adminModeration()};
+  window.cmntModerateSource=async function(id,status){var r=await db.from('cmnt_scientific_sources').update({review_status:status}).eq('id',id);if(r.error)return toast(r.error.message,true);toast('Fonte atualizada.');adminModeration()};
+  window.cmntModerateEthics=async function(id,status){var r=await db.from('cmnt_ethics_reviews').update({status,reviewed_by:S.user.id,reviewed_at:new Date().toISOString()}).eq('id',id);if(r.error)return toast(r.error.message,true);toast('Revisão ética atualizada.');adminModeration()};
+  window.cmntModerateArticle=async function(id,status){var data={status};if(status==='published')data.published_at=new Date().toISOString();var r=await db.from('cmnt_editorial_articles').update(data).eq('id',id);if(r.error)return toast(r.error.message,true);toast('Editorial atualizado.');adminModeration()};
+  window.cmntToggleObs=async function(id,published){var r=await db.from('cmnt_observatory_data').update({published}).eq('id',id);if(r.error)return toast(r.error.message,true);toast(published?'Indicador publicado.':'Indicador retirado.');adminModeration()};
+  window.cmntAdminRender=async function(){
+    if(!state.admin){return toast('Acesso administrativo não autorizado.',true)}
+    if(!document.getElementById('main'))return;
+    var labels=[['admin','Painel'],['admin-users','Administradores'],['admin-communities','Comunidades'],['admin-research','Pesquisa'],['admin-evidence','Evidências'],['admin-ethics','Ética'],['admin-editorial','Editorial'],['admin-observatory','Observatório'],['admin-audit','Auditoria']];
+    document.getElementById('main').innerHTML='<section><div class="brand text-white rounded-3xl p-6"><div class="uppercase tracking-[.2em] text-emerald-300 text-xs font-black">CMNT • PAINEL ADMINISTRATIVO</div><h1 class="text-3xl font-black mt-1">Centro de Comando Científico</h1><p class="text-white/75 mt-2">Governança, segurança, ciência e operação da plataforma.</p></div><div class="mt-4 flex gap-2 overflow-auto scroll">'+labels.map(function(x){return '<button onclick="cmntPlatformGo(\\''+x[0]+'\\')" class="px-3 py-2 rounded-xl text-sm font-bold '+(state.section===x[0]?'bg-emerald-100 text-emerald-900':'bg-white')+'">'+x[1]+'</button>'}).join('')+'</div><div id="cmnt-admin-body" class="mt-5"></div></section>';
+    var b=document.getElementById('cmnt-admin-body');
+    if(state.section==='admin')b.innerHTML=adminHome();
+    else if(state.section==='admin-users')b.innerHTML=adminUsers();
+    else await adminModeration();
+  };
 })();
