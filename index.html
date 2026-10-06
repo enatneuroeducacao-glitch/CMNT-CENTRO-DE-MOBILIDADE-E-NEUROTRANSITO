@@ -357,7 +357,7 @@ async function submitHSIDothP(){
 }
 function cmntTabs(){
  var tabs=[["overview","Visão geral"],["research_lab","Laboratório de pesquisa"],["researcher","Pesquisador"],["evidence","Evidências"],["nexus12","NEXUS 12"],["hsi","HSI"],["academy","Academia ENAT"],["observatory","Observatório"],["events","Eventos"],["editorial","Editorial"],["scientific_communities","Comunidades científicas"],["institutions","Instituições"],["governance","Governança"],["knowledge_base","Base de conhecimento"],["integrations","Integrações"],["scientific_ai","IA científica"]];
- return '<div class="flex gap-2 flex-wrap mb-5">'+tabs.map(function(x){return'<button onclick="cmntTab(\''+x[0]+'\')" class="px-3 py-2 rounded-xl text-sm font-bold '+((S.cmntTab||"overview")===x[0]?"bg-emerald-100 text-emerald-800":"bg-white text-slate-600 border border-slate-200 hover:bg-slate-50")+'">'+x[1]+'</button>'}).join('')+'</div>';
+ return '<div class="cmnt-tabs flex gap-2 flex-wrap mb-5">'+tabs.map(function(x){return'<button onclick="cmntTab(\''+x[0]+'\')" class="px-3 py-2 rounded-xl text-sm font-bold '+((S.cmntTab||"overview")===x[0]?"bg-emerald-100 text-emerald-800":"bg-white text-slate-600 border border-slate-200 hover:bg-slate-50")+'">'+x[1]+'</button>'}).join('')+'</div>';
 }
 function cmntTab(key){S.cmntTab=key;cmntLog(key,"tab_opened",{source:"cmnt_scientific_menu"});render()}
 function cmnt(){
