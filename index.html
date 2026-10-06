@@ -59,7 +59,8 @@ html{line-height:1.5;-webkit-text-size-adjust:100%}body{margin:0}img,video{displ
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
-body{background:#f4f7fa;color:#07111f;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.brand{background:linear-gradient(135deg,#07111f,#103b5d 60%,#16b86a)}.card{background:#fff;border:1px solid #e8edf2;box-shadow:0 10px 35px rgba(7,17,31,.07)}.glass{background:rgba(255,255,255,.88);backdrop-filter:blur(15px)}.active{background:#e7f7ef;color:#087a49}.hide{display:none!important}.scroll::-webkit-scrollbar{display:none}.scroll{scrollbar-width:none}.modal{background:rgba(0,0,0,.58);backdrop-filter:blur(8px)}button{transition:.15s}button:active{transform:scale(.98)}<style id="cmnt-polish-styles">
+body{background:#f4f7fa;color:#07111f;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.brand{background:linear-gradient(135deg,#07111f,#103b5d 60%,#16b86a)}.card{background:#fff;border:1px solid #e8edf2;box-shadow:0 10px 35px rgba(7,17,31,.07)}.glass{background:rgba(255,255,255,.88);backdrop-filter:blur(15px)}.active{background:#e7f7ef;color:#087a49}.hide{display:none!important}.scroll::-webkit-scrollbar{display:none}.scroll{scrollbar-width:none}.modal{background:rgba(0,0,0,.58);backdrop-filter:blur(8px)}button{transition:.15s}button:active{transform:scale(.98)}</style>
+<style id="cmnt-polish-styles">
 /* Polimento visual CMNT — sem alterar a lógica da aplicação */
 button{border:0;background:transparent}
 input,textarea,select{border:0;outline:none}
@@ -85,7 +86,6 @@ main .brand,.brand{box-shadow:0 12px 28px rgba(7,17,31,.10)}
 .cmnt-tabs button{border:1px solid #e2e8f0!important;background:#fff!important;transition:.15s}
 .cmnt-tabs button:hover{border-color:#b8dccc!important;background:#f7fbf9!important}
 .cmnt-tabs button.active{border-color:#9ed8bc!important;background:#e7f7ef!important;color:#087a49!important;box-shadow:0 3px 10px rgba(22,184,106,.08)}
-</style>
 </style>
 <style id="cmnt-premium-polish">
 /* Acabamento premium da interface — somente apresentação */
@@ -516,7 +516,19 @@ async function uniqueProfileUsername(name,email,id){var base=makeProfileUsername
 async function ensureProfile(){if(!S.user)return null;var existing=await db.from('social_profiles').select('*').eq('id',S.user.id).maybeSingle();if(existing.error)throw new Error(existing.error.message);var meta=S.user.user_metadata||{};if(existing.data){var current=existing.data;var oldUsername=String(current.username||'');var base=makeProfileUsername(current.display_name||meta.display_name,S.user.email);var legacy=oldUsername.indexOf(base+'_')===0; if(legacy){var nu=await uniqueProfileUsername(current.display_name||meta.display_name,S.user.email,S.user.id);if(nu!==oldUsername){var up=await db.from('social_profiles').update({username:nu}).eq('id',S.user.id);if(up.error)throw new Error(up.error.message);current.username=nu}}return current}var username=await uniqueProfileUsername(meta.display_name,S.user.email,S.user.id);var payload={id:S.user.id,username:username,display_name:meta.display_name||((S.user.email||'usuario').split('@')[0]),avatar_url:'https://api.dicebear.com/9.x/initials/svg?seed='+encodeURIComponent(meta.display_name||'ENAT')};var created=await db.from('social_profiles').upsert(payload,{onConflict:'id'}).select('*').maybeSingle();if(created.error)throw new Error(created.error.message);return created.data}
 async function saveProfile(){if(!S.user)return auth();var btn=document.getElementById('saveProfileBtn');if(btn){btn.disabled=true;btn.textContent='Salvando...'}try{var avatar=document.getElementById('pavatar').files[0],cover=document.getElementById('pcover').files[0];var avatarUrl=await uploadProfileImage(avatar,'avatar'),coverUrl=await uploadProfileImage(cover,'cover');var current=await ensureProfile();var payload={id:S.user.id,username:current&&current.username?current.username:makeProfileUsername(document.getElementById('pn').value,S.user.email,S.user.id),display_name:document.getElementById('pn').value.trim(),city:document.getElementById('pcity').value.trim(),state:normalizeState(document.getElementById('pst').value),bio:document.getElementById('pb').value.trim(),updated_at:new Date().toISOString()};if(!payload.display_name)throw new Error('Informe seu nome.');if(payload.state&&payload.state.length>2)throw new Error('Informe o estado por extenso ou pela sigla UF.');if(avatarUrl)payload.avatar_url=avatarUrl;if(coverUrl)payload.cover_url=coverUrl;var r=await db.from('social_profiles').upsert(payload,{onConflict:'id'}).select('*').maybeSingle();if(r.error)throw new Error(r.error.message);if(!r.data)throw new Error('Não foi possível criar ou localizar o perfil.');S.profile=r.data;closeModal();shell();toast('Perfil atualizado com sucesso.')}catch(e){if(btn){btn.disabled=false;btn.textContent='Salvar alterações'}toast('Não foi possível salvar o perfil: '+(e.message||e),true)}}
 async function init(){if(!db)return;try{var s=await db.auth.getSession();S.user=s.data.session?s.data.session.user:null;if(S.user){S.profile=await ensureProfile();if(!S.profile)throw new Error('Não foi possível criar o perfil do usuário autenticado.');var f=await db.from('social_follows').select('following_id').eq('follower_id',S.user.id);S.following=new Set((f.data||[]).map(function(x){return x.following_id}))}else S.profile={display_name:'Visitante',username:'visitante'};await load();shell()}catch(e){console.error(e);bootError(e)}}
-if(db){db.auth.onAuthStateChange(function(){setTimeout(init,0)});init()}else{bootError(new Error('Cliente Supabase não carregou. Os dois CDNs de fallback foram tentados.'))}
+function startCmntApp(){
+  if(!db){bootError(new Error('Cliente Supabase não carregou. Os dois CDNs de fallback foram tentados.'));return}
+  try{shell()}catch(e){bootError(e);return}
+  var watchdog=setTimeout(function(){
+    var a=document.getElementById('app');
+    if(a&&a.innerText&&a.innerText.indexOf('Carregando a rede social')>=0){
+      bootError(new Error('A inicialização do Supabase demorou mais que o limite de segurança. A interface foi interrompida para evitar uma tela infinita.'));
+    }
+  },10000);
+  db.auth.onAuthStateChange(function(){setTimeout(init,0)});
+  init().finally(function(){clearTimeout(watchdog)});
+}
+if(db){startCmntApp()}else{bootError(new Error('Cliente Supabase não carregou. Os dois CDNs de fallback foram tentados.'))}
 </script>
 </body>
 </html>
