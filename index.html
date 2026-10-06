@@ -86,6 +86,49 @@ main .brand,.brand{box-shadow:0 12px 28px rgba(7,17,31,.10)}
 .cmnt-tabs button.active{border-color:#9ed8bc!important;background:#e7f7ef!important;color:#087a49!important;box-shadow:0 3px 10px rgba(22,184,106,.08)}
 </style>
 </style>
+<style id="cmnt-premium-polish">
+/* Acabamento premium da interface — somente apresentação */
+body{background:linear-gradient(180deg,#f7fafc 0%,#eef3f7 100%)}
+header.glass{height:74px!important}
+header .max-w-7xl{height:74px!important}
+header .w-10{background:linear-gradient(145deg,#07111f,#0b2940)!important;border:1px solid #18374c!important;box-shadow:0 6px 18px rgba(7,17,31,.18)!important}
+header .w-10 .text-white{font-size:9px!important;line-height:.95!important}
+header .w-10 .text-emerald-300{font-size:6px!important}
+header .text-xl{letter-spacing:-.03em}
+header input{height:44px!important;border-radius:14px!important;background:#f8fafc!important}
+header .ml-auto>button{transition:all .18s ease}
+header .ml-auto>button:hover{background:#eef5f2!important;transform:translateY(-1px)}
+aside .card{background:rgba(255,255,255,.96)!important}
+aside .card:first-child{padding:14px!important}
+aside .card:first-child>div:first-child{padding:4px 5px 10px}
+aside .card:first-child button.w-full{height:48px;margin:3px 0;border-radius:15px!important;padding:0 14px!important}
+aside .card:first-child button.w-full:not(.active){background:#f8fafc!important;color:#526174!important}
+aside .card:first-child button.w-full:not(.active):hover{background:#f0f7f4!important;color:#087a49!important;border-color:#d4eadf!important}
+aside .card:first-child button.w-full.active{background:linear-gradient(135deg,#e9f8f1,#dcf4e9)!important;color:#087a49!important;border-color:#a9ddc4!important}
+aside .card:first-child button.w-full svg{width:18px;height:18px}
+aside .card:not(:first-child){border-radius:22px!important}
+main>.brand{border-radius:24px!important;padding:30px 34px!important;box-shadow:0 16px 35px rgba(7,17,31,.13)!important}
+main>.brand h1{letter-spacing:-.035em;max-width:760px}
+main>.brand p{max-width:760px}
+.card{box-shadow:0 8px 28px rgba(7,17,31,.055)!important}
+main .card{border-color:#e4ebf0!important}
+main .card img{border-radius:14px}
+main .card button{border-radius:11px}
+main .card input{border:1px solid #d8e1e8!important;background:#f8fafc!important}
+main .card input:focus{border-color:#83cdaa!important;background:#fff!important;box-shadow:0 0 0 3px rgba(22,184,106,.10)}
+/* composer */
+main .card input[placeholder*="acontecendo"]{height:48px!important;border-radius:15px!important;font-size:15px}
+main .card .border-t{border-color:#edf1f4!important}
+/* ações do composer */
+main .card button{transition:all .15s ease}
+main .card button:hover{background:#f2f7f5!important;color:#087a49!important;border-color:#b9ddcd!important}
+main .card button[onclick*="publish"],main .card button[onclick*="post"]{font-weight:800}
+/* comunidade */
+aside .card button:not(.w-full){transition:.15s}
+aside .card button:not(.w-full):hover{transform:translateX(2px)}
+/* remover aparência de formulário HTML cru */
+button{font-family:inherit}
+</style>
 </head>
 <body>
 <div id="app"><div style="min-height:100vh;display:grid;place-items:center;background:#f4f7fa;font-family:system-ui,sans-serif"><div style="text-align:center;padding:30px"><div style="font-size:28px;font-weight:900;color:#07111f">ENAT</div><div style="margin-top:10px;color:#64748b">Carregando a rede social...</div></div></div></div><div id="modal"></div><div id="toast" class="fixed right-4 bottom-20 md:bottom-5 z-[90] space-y-2"></div>
