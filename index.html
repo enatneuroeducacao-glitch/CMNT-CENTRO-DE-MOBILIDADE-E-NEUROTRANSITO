@@ -458,7 +458,7 @@ function cmntRenderContent(key){
  if(key==="nexus12")html+='<div class="grid md:grid-cols-2 gap-4">'+NEXUS12.map(function(x,i){return'<article class="card rounded-3xl p-5"><div class="text-xs font-black text-emerald-700">PILAR '+(i+1)+'</div><h3 class="text-xl font-black mt-1">'+esc(x[0])+'</h3><p class="text-slate-600 mt-2 leading-7">'+esc(x[1])+'</p></article>'}).join('')+'</div>';
  else html+='<div class="grid md:grid-cols-2 gap-4">'+d.blocks.map(function(x){return cmntBlock(x[0],x[1])}).join('')+'</div>';
  if(key==="hsi")html+=cmntHSIQuestionnaire();
- if(["research_lab","researcher","evidence","academy","observatory","events","editorial","scientific_communities","institutions","governance","knowledge_base","integrations","scientific_ai"].indexOf(key)>=0)html+='<div id="cmntData" class="mt-5"><div class="card rounded-3xl p-6 text-slate-400">Conectando este módulo ao banco científico...</div></div><script>setTimeout(function(){loadCmntData("'+key+'")},0)<\/script>';
+ if(["research_lab","researcher","evidence","academy","observatory","events","editorial","scientific_communities","institutions","governance","knowledge_base","integrations","scientific_ai"].indexOf(key)>=0){html+='<div id="cmntData" class="mt-5"><div class="card rounded-3xl p-6 text-slate-400">Conectando este módulo ao banco científico...</div></div>';setTimeout(function(){loadCmntData(key)},0)}
  return html+'</div>';
 }
 function cmntHSIQuestionnaire(){
