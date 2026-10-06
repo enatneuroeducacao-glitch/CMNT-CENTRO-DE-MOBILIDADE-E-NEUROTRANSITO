@@ -616,10 +616,10 @@ const CMNT_SCI_SECTIONS={
   ["Dados externos e proveniência","Toda informação importada deve manter origem, identificador, data de coleta e, quando disponível, versão da fonte. A integração deve preservar a distinção entre conteúdo oficial do curso e materiais científicos complementares produzidos no CMNT."],
   ["Fluxo pedagógico","NeuroDrive → formação do instrutor → CMNT/Neurotrânsito → discussão científica → HSI-DOTH-P/NEXUS 12 → aplicação pedagógica → acompanhamento. O fluxo deve apoiar a aprendizagem sem transformar indicadores em diagnósticos ou decisões automáticas."]
  ]},
- neurodrive:{title:"NeuroDrive",kicker:"FORMAÇÃO DIGITAL E INTELIGÊNCIA PEDAGÓGICA",intro:"Área dedicada à integração entre a rede Neurotrânsito e os cursos do NeuroDrive ENAT-HSI, conectando formação, prática do instrutor, HSI-DOTH-P e acompanhamento da evolução do aluno.",blocks:[
-  ["NeuroDrive dentro do ecossistema","O NeuroDrive funciona como camada de apoio ao processo de ensino-aprendizagem. A rede Neurotrânsito amplia essa experiência ao conectar conhecimento, comunidades, discussão científica e trilhas formativas. O objetivo é evitar que o curso fique isolado: o aprendizado pode ser contextualizado, discutido e relacionado às competências do NEXUS 12."],
-  ["Integração com cursos","O catálogo publicado em enat_courses passa a ser reconhecido pelo CMNT como fonte de formação. O curso INSTRUTOR NEURODRIVE ENAT é integrado à área científica, preservando nome, código, carga horária, modalidade, resumo e status de publicação. O CMNT não duplica o conteúdo do curso: cria uma camada de contexto, estudo e acompanhamento."],
-  ["Aprendizagem conectada","A integração relaciona formação do NeuroDrive com HSI-DOTH-P, NEXUS 12 e conteúdos científicos. O instrutor pode estudar o conceito, participar da rede, refletir sobre situações reais e retornar ao curso para aprofundar competências. Dados de progresso devem respeitar finalidade, acesso e privacidade."]
+ neurodrive:{title:"NeuroDrive",kicker:"FORMAÇÃO E GESTÃO PROFISSIONAL DO INSTRUTOR",intro:"Os cursos ficam dentro da própria Rede Neurotrânsito. Aqui o instrutor encontra as formações do catálogo ENAT/NeuroDrive, enquanto o NeuroDrive aparece como o sistema profissional de gestão para organizar a rotina do instrutor.",blocks:[
+  ["Cursos dentro da Rede Neurotrânsito","O catálogo publicado em enat_courses é apresentado diretamente nesta área. O conteúdo continua pertencendo à estrutura oficial de formação, mas a descoberta dos cursos acontece dentro da rede social, junto ao conhecimento científico, comunidades e competências do NEXUS 12."],
+  ["NeuroDrive — sistema de gestão para instrutores","Além da formação, o NeuroDrive oferece um ambiente profissional para gestão da atividade do instrutor, reunindo recursos como alunos, agenda, aulas, HSI-DOTH-P, RPA Único, financeiro e acompanhamento da formação."],
+  ["Formação + gestão","A Rede Neurotrânsito é o ambiente social e científico; o NeuroDrive é o ambiente profissional de gestão e formação. Os dois produtos permanecem com funções claras, sem criar uma segunda camada de integração no menu da rede."]
  ]},
  scientific_ai:{title:"IA científica",kicker:"INTELIGÊNCIA ARTIFICIAL COM RESPONSABILIDADE",intro:"A IA científica pode ajudar a organizar literatura, comparar conceitos, localizar padrões e apoiar análise, mas não substitui método, revisão humana ou responsabilidade científica.",blocks:[
   ["Usos permitidos","Classificação de conteúdo, apoio à busca, síntese preliminar, organização de referências, geração de perguntas e apoio à análise exploratória."],
@@ -671,12 +671,12 @@ const HSI_DOTH_P=[
 function cmntBlock(title,body){return'<article class="card rounded-3xl p-5"><h3 class="text-lg font-black">'+esc(title)+'</h3><p class="text-slate-600 mt-2 leading-7 whitespace-pre-wrap">'+esc(body)+'</p></article>'}
 function cmntDynamicCard(title,body,meta){return'<article class="card rounded-3xl p-5"><div class="flex justify-between gap-3 items-start"><div><h3 class="text-lg font-black">'+esc(title)+'</h3><p class="text-slate-600 mt-2 leading-7 whitespace-pre-wrap">'+esc(body||'')+'</p></div>'+(meta?'<span class="shrink-0 text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg">'+esc(meta)+'</span>':'')+'</div></article>'}
 async function cmntNeuroDriveCatalog(){
- var r=await db.from('enat_courses').select('id,name,code,nature,modality,summary,category,hours,slug,active,published').ilike('name','%NEURODRIVE%').eq('active',true).eq('published',true).order('name');
+ var r=await db.from('enat_courses').select('id,name,code,nature,modality,summary,category,hours,slug,active,published,thumbnail_url').eq('active',true).eq('published',true).order('name').limit(30);
  if(r.error||!r.data||!r.data.length)return '';
  var cards=r.data.map(function(x){
-   return '<article class="p-6 rounded-2xl bg-slate-50 border border-slate-200" style="width:100%;"><div class="text-xs font-black text-emerald-700">'+esc(x.code||'NEURODRIVE')+'</div><h4 class="text-xl font-black mt-1">'+esc(x.name)+'</h4><div class="text-sm text-slate-500 mt-2">'+esc((x.hours||'')+' horas · '+(x.modality||'online'))+'</div><p class="text-slate-600 mt-3 leading-7">'+esc(x.summary||'Curso integrado ao ecossistema Neurotrânsito.')+'</p><button type="button" onclick="cmntOpenNeuroDriveCourseAccess()" class="mt-4 px-4 py-2 rounded-xl bg-[#07111f] text-white font-black">Ir para cursos no NeuroDrive</button></article>';
+   return '<article class="card rounded-2xl p-5 border border-slate-200 bg-white"><div class="flex flex-wrap justify-between gap-3"><div class="text-xs uppercase tracking-widest text-emerald-700 font-black">'+esc(x.category||x.nature||'FORMAÇÃO ENAT')+'</div><span class="text-xs font-black text-slate-500">'+esc((x.hours||'')+' horas · '+(x.modality||'online'))+'</span></div><h4 class="text-xl font-black mt-2">'+esc(x.name)+'</h4><div class="text-sm text-slate-500 mt-1">'+esc(x.code||'')+'</div><p class="text-slate-600 mt-3 leading-7">'+esc(x.summary||'Formação profissional do ecossistema ENAT.')+'</p></article>';
  }).join('');
- return '<section class="card rounded-3xl p-6 mt-4" style="grid-column:1/-1;width:100%;"><div class="flex flex-wrap items-start justify-between gap-4"><div class="max-w-3xl"><div class="text-xs uppercase tracking-widest text-emerald-700 font-black">INTEGRAÇÃO NEUROTRÂNSITO ↔ NEURODRIVE</div><h3 class="text-2xl sm:text-3xl font-black mt-1">Cursos NeuroDrive disponíveis</h3><p class="text-slate-600 mt-2 leading-7">O catálogo formativo do NeuroDrive é conectado à rede Neurotrânsito para que o conhecimento possa ser estudado, discutido, aplicado ao trânsito e retomado durante a formação.</p></div><div class="px-4 py-3 rounded-2xl bg-emerald-50 text-emerald-800 font-black whitespace-nowrap">FORMAÇÃO + PRÁTICA + CIÊNCIA</div></div><div style="display:grid;grid-template-columns:minmax(0,1fr);gap:16px;margin-top:20px;">'+cards+'</div></section>';
+ return '<section class="card rounded-3xl p-6"><div class="flex flex-wrap items-end justify-between gap-4"><div><div class="text-xs uppercase tracking-widest text-emerald-700 font-black">CATÁLOGO DE FORMAÇÃO</div><h3 class="text-2xl sm:text-3xl font-black mt-1">Cursos disponíveis na Rede Neurotrânsito</h3><p class="text-slate-600 mt-2 leading-7 max-w-3xl">Explore as formações diretamente na rede social. O NeuroDrive permanece como o sistema profissional para gestão e aprofundamento da atividade do instrutor.</p></div><div class="px-4 py-3 rounded-2xl bg-emerald-50 text-emerald-800 font-black whitespace-nowrap">CURSOS ENAT</div></div><div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4 mt-6">'+cards+'</div></section>';
 }
 async function loadCmntData(key){
  var box=document.getElementById('cmntData');if(!box)return;
@@ -999,8 +999,19 @@ function cmntRenderContent(key){
   html+='<div class="grid md:grid-cols-2 gap-4">'+d.blocks.map(function(x){return cmntBlock(x[0],x[1])}).join('')+'</div>';
  }
  if(key==="hsi")html+=cmntHSIQuestionnaire();
- if(key!=="nexus12")html+=cmntCourse(key);
- if(["research_lab","researcher","evidence","academy","observatory","events","editorial","scientific_communities","institutions","governance","knowledge_base","integrations","scientific_ai"].indexOf(key)>=0){
+ if(key==="neurodrive"){
+  html+='<section class="card rounded-3xl p-6 mt-5" style="border:1px solid #dbe5ef;background:linear-gradient(135deg,#07111f,#0d4b5c,#10b981);color:white;">'+
+    '<div class="flex flex-wrap items-center justify-between gap-5">'+
+      '<div class="max-w-3xl"><div class="text-xs uppercase tracking-[.2em] text-emerald-300 font-black">SISTEMA PROFISSIONAL PARA INSTRUTORES</div>'+
+      '<h3 class="text-2xl sm:text-3xl font-black mt-2">NeuroDrive — Assistente do Instrutor</h3>'+
+      '<p class="mt-3 text-white/80 leading-7">Transforme a formação em gestão profissional: organize alunos, agenda, aulas, HSI-DOTH-P, RPA Único, financeiro e acompanhamento em um único ambiente.</p></div>'+
+      '<a href="https://neurodrive.hsi-doth-pg.com.br" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-white text-[#07111f] font-black shadow-lg">CONHEÇA O NEURODRIVE</a>'+
+    '</div></section>'+
+    '<div id="cmntNeuroDriveCatalog" class="mt-5"><div class="card rounded-3xl p-6 text-slate-400">Carregando cursos NeuroDrive...</div></div>';
+  setTimeout(function(){cmntNeuroDriveCatalog().then(function(markup){var box=document.getElementById("cmntNeuroDriveCatalog");if(box)box.innerHTML=markup||'<div class="card rounded-3xl p-6 text-slate-500">Nenhum curso publicado no momento.</div>';}).catch(function(){var box=document.getElementById("cmntNeuroDriveCatalog");if(box)box.innerHTML='<div class="card rounded-3xl p-6 bg-red-50 text-red-700">Não foi possível carregar o catálogo de cursos.</div>';})},0);
+ }
+ if(key!=="nexus12" && key!=="neurodrive")html+=cmntCourse(key);
+ if(["research_lab","researcher","evidence","academy","observatory","events","editorial","scientific_communities","institutions","governance","knowledge_base","scientific_ai"].indexOf(key)>=0){
   html+='<div id="cmntData" class="mt-5"><div class="card rounded-3xl p-6 text-slate-400">Conectando este módulo ao banco científico...</div></div>';
   setTimeout(function(){loadCmntData(key)},0);
  }
@@ -1026,7 +1037,7 @@ async function submitHSIDothP(){
  await cmntLog("hsi","result_viewed",{assessment_id:r.data&&r.data.id||null});
 }
 function cmntTabs(){
- var tabs=[["overview","Visão geral"],["research_lab","Laboratório de pesquisa"],["researcher","Pesquisador"],["evidence","Evidências"],["nexus12","NEXUS 12"],["hsi","HSI"],["academy","Academia ENAT"],["observatory","Observatório"],["events","Eventos"],["editorial","Editorial"],["scientific_communities","Comunidades científicas"],["institutions","Instituições"],["governance","Governança"],["knowledge_base","Base de conhecimento"],["integrations","Integrações"],["neurodrive","NeuroDrive"],["scientific_ai","IA científica"]];
+ var tabs=[["overview","Visão geral"],["research_lab","Laboratório de pesquisa"],["researcher","Pesquisador"],["evidence","Evidências"],["nexus12","NEXUS 12"],["hsi","HSI"],["academy","Academia ENAT"],["observatory","Observatório"],["events","Eventos"],["editorial","Editorial"],["scientific_communities","Comunidades científicas"],["institutions","Instituições"],["governance","Governança"],["knowledge_base","Base de conhecimento"],["neurodrive","NeuroDrive"],["scientific_ai","IA científica"]];
  return '<div class="cmnt-tabs flex gap-2 flex-wrap mb-5">'+tabs.map(function(x){return'<button onclick="cmntTab(\''+x[0]+'\')" class="px-3 py-2 rounded-xl text-sm font-bold '+((S.cmntTab||"overview")===x[0]?"bg-emerald-100 text-emerald-800":"bg-white text-slate-600 border border-slate-200 hover:bg-slate-50")+'">'+x[1]+'</button>'}).join('')+'</div>';
 }
 function cmntTab(key){S.cmntTab=key;cmntLog(key,"tab_opened",{source:"cmnt_scientific_menu"});render()}
