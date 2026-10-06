@@ -134,3 +134,5 @@ window.go=function(t){
 };
 loadDomains().then(function(){ if(window.S&&S.communities&&S.communities.length){ /* dados serão recarregados pelo shell existente */ }});
 })();
+/* Load the additive observatory layer after the platform layer is available. */
+(function(){var s=document.createElement('script');s.src='cmnt-observatory.js';s.async=false;document.body.appendChild(s)})();
