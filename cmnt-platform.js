@@ -279,3 +279,45 @@
     if(section==='events'){var body4=document.getElementById('cmnt-platform-body');if(body4&&!document.getElementById('cmnt-event-actions')){var ev=await db.from('cmnt_events').select('id,title,starts_at,location,published').eq('published',true).order('starts_at'),box=document.createElement('div');box.id='cmnt-event-actions';box.className='card rounded-3xl p-5 mt-4';box.innerHTML='<h3 class="font-black">Participação</h3><div class="space-y-2 mt-3">'+(ev.data||[]).map(function(e){return '<div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50"><span class="text-sm font-bold">'+escp(e.title)+' · '+new Date(e.starts_at).toLocaleString('pt-BR')+'</span><button onclick="cmntToggleEventRegistration(\''+e.id+'\')" class="px-3 py-2 rounded-xl bg-[#07111f] text-white text-xs font-black">Participar</button></div>'}).join('')+'</div>';body4.appendChild(box)}}
   }};
 })();
+
+/* CMNT live HSI/NeuroDrive integration — additive, per-user and RLS-respecting. */
+(function(){
+  'use strict';
+  var previous=window.cmntPlatformGo;
+  function cmntFmt(v){return Number(v||0).toFixed(2)}
+  async function hsiLive(){
+    if(!S.user)return {participant:false,results:[]};
+    var p=await db.from('hsi_participants').select('id').eq('user_id',S.user.id).limit(20);
+    var ids=(p.data||[]).map(function(x){return x.id}); if(!ids.length)return {participant:false,results:[]};
+    var ss=await db.from('hsi_assessment_sessions').select('id,participant_id,started_at,submitted_at,status').in('participant_id',ids).order('started_at',{ascending:false}).limit(20);
+    var sid=(ss.data||[]).map(function(x){return x.id}); if(!sid.length)return {participant:true,results:[]};
+    var rr=await db.from('hsi_assessment_results').select('id,session_id,total_score,risk_class,calculation_version,calculated_at').in('session_id',sid).order('calculated_at',{ascending:false}).limit(20);
+    return {participant:true,results:rr.data||[]};
+  }
+  async function neuroLive(){
+    if(!S.user)return {lessons:[],hsi:[]};
+    var [l,h]=await Promise.all([
+      db.from('ai_lessons').select('id,started_at,ended_at,status,phase,duration_minutes,seguranca,comunicacao,didatica,adaptacao,evolucao,hsi_evaluation').eq('user_id',S.user.id).order('started_at',{ascending:false}).limit(50),
+      db.from('ai_hsi').select('id,lesson_id,cognitive,emotional,behavioral,social,contextual,final_score,created_at').eq('user_id',S.user.id).order('created_at',{ascending:false}).limit(50)
+    ]);
+    return {lessons:l.data||[],hsi:h.data||[]};
+  }
+  function metric(label,value,sub){return '<div class="p-4 rounded-2xl bg-slate-50"><div class="text-xs font-black uppercase tracking-wide text-slate-500">'+label+'</div><div class="text-2xl font-black mt-1">'+value+'</div><div class="text-xs text-slate-500 mt-1">'+sub+'</div></div>'}
+  window.cmntPlatformGo=async function(section){
+    await previous(section);
+    var body=document.getElementById('cmnt-platform-body'); if(!body)return;
+    if(section==='hsi'){
+      var x=await hsiLive(), latest=x.results[0];
+      var html='<div class="mt-4 card rounded-3xl p-5"><div class="flex items-center justify-between gap-3"><div><h3 class="font-black text-lg">Integração HSI em tempo real</h3><p class="text-sm text-slate-500 mt-1">Somente resultados pertencentes à sua conta são exibidos nesta área.</p></div>'+ (x.participant?'<span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-black">Participante HSI</span>':'<span class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-black">Sem avaliação vinculada</span>')+'</div>';
+      if(latest) html+='<div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">'+metric('Último HSI',cmntFmt(latest.total_score),latest.risk_class||'classe não informada')+metric('Avaliações',x.results.length,'resultados disponíveis')+metric('Versão',latest.calculation_version||'—','cálculo registrado')+metric('Data',latest.calculated_at?new Date(latest.calculated_at).toLocaleDateString('pt-BR'):'—','último processamento')+'</div>';
+      else html+='<div class="mt-4 p-4 rounded-2xl bg-slate-50 text-sm text-slate-600">A estrutura HSI está conectada ao CMNT, mas esta conta ainda não possui resultado HSI disponível.</div>';
+      html+='</div>'; body.insertAdjacentHTML('beforeend',html);
+    }
+    if(section==='integrations'){
+      var n=await neuroLive(), latest=n.hsi[0], avg=n.hsi.length?n.hsi.reduce(function(a,b){return a+Number(b.final_score||0)},0)/n.hsi.length:null;
+      var html='<div class="mt-4 card rounded-3xl p-5"><h3 class="font-black text-lg">NeuroDrive → CMNT</h3><p class="text-sm text-slate-500 mt-1">Conexão com aulas e avaliações HSI do NeuroDrive, respeitando o usuário autenticado.</p><div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">'+metric('Aulas',n.lessons.length,'registros vinculados à conta')+metric('Avaliações NeuroDrive',n.hsi.length,'resultados HSI disponíveis')+metric('Média HSI',avg===null?'—':cmntFmt(avg),'sobre avaliações NeuroDrive')+metric('Última aula',n.lessons[0]&&n.lessons[0].started_at?new Date(n.lessons[0].started_at).toLocaleDateString('pt-BR'):'—','atividade mais recente')+'</div>';
+      if(latest)html+='<div class="mt-4 p-4 rounded-2xl bg-emerald-50 text-emerald-900 text-sm"><b>Última avaliação NeuroDrive:</b> Cognitivo '+cmntFmt(latest.cognitive)+' · Emocional '+cmntFmt(latest.emotional)+' · Comportamental '+cmntFmt(latest.behavioral)+' · Social '+cmntFmt(latest.social)+' · Contextual '+cmntFmt(latest.contextual)+'.</div>';
+      body.insertAdjacentHTML('beforeend',html+'</div>');
+    }
+  };
+})();
