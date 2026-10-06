@@ -316,5 +316,33 @@ async function saveProfile(){if(!S.user)return auth();var btn=document.getElemen
 async function init(){if(!db)return;try{var s=await db.auth.getSession();S.user=s.data.session?s.data.session.user:null;if(S.user){S.profile=await ensureProfile();if(!S.profile)throw new Error('Não foi possível criar o perfil do usuário autenticado.');var f=await db.from('social_follows').select('following_id').eq('follower_id',S.user.id);S.following=new Set((f.data||[]).map(function(x){return x.following_id}))}else S.profile={display_name:'Visitante',username:'visitante'};await load();shell()}catch(e){console.error(e);bootError(e)}}
 if(db){db.auth.onAuthStateChange(function(){setTimeout(init,0)});init()}
 </script>
-</body>
+<script>
+async function openNeuroDriveCourseAccess(){
+  if(!S.user){auth();return}
+  var result=await db.rpc('neurodrive_issue_course_access',{p_course_code:'ENAT-CURSO-002'});
+  if(result.error){
+    toast('Não foi possível abrir o curso NeuroDrive: '+(result.error.message||'acesso não autorizado'),true);
+    return;
+  }
+  var ticket=result.data&&result.data.ticket;
+  if(!ticket){toast('A autorização do curso não foi gerada.',true);return}
+  window.location.href='https://hsi-doth-pg.com.br/cursos#access='+encodeURIComponent(ticket);
+}
+(function(){
+  function bindNeuroDriveButtons(){
+    document.querySelectorAll('button,a,[role="button"]').forEach(function(el){
+      var label=(el.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
+      if(label==='abrir curso neurodrive'){
+        el.onclick=function(ev){
+          if(ev)ev.preventDefault();
+          openNeuroDriveCourseAccess();
+        };
+        el.setAttribute('data-neurodrive-course-access','true');
+      }
+    });
+  }
+  bindNeuroDriveButtons();
+  new MutationObserver(bindNeuroDriveButtons).observe(document.body,{childList:true,subtree:true});
+})();
+</script></body>
 </html>
