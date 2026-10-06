@@ -1078,7 +1078,7 @@ if(db){startCmntApp()}else{bootError(new Error('Cliente Supabase não carregou. 
 async function cmntOpenNeuroDriveCourseAccess(){
   if(!S.user){auth();return}
   try{
-    var result=await db.functions.invoke('neurodrive-course-access',{body:{action:'issue'}});
+    var result=await db.functions.invoke('neurodrive-course-access',{body:{action:'issue_courses'}});
     if(result.error){
       var msg=(result.data&&result.data.error)||result.error.message||'acesso não autorizado';
       toast('Não foi possível abrir o curso NeuroDrive: '+msg,true);
@@ -1086,7 +1086,7 @@ async function cmntOpenNeuroDriveCourseAccess(){
     }
     var ticket=result.data&&result.data.ticket;
     if(!ticket){toast('A autorização do curso não foi gerada.',true);return}
-    window.location.href='https://hsi-doth-pg.com.br/cursos#access='+encodeURIComponent(ticket);
+    window.location.href='https://neurodrive.hsi-doth-pg.com.br/?access='+encodeURIComponent(ticket);
   }catch(err){
     toast('Não foi possível abrir o curso NeuroDrive. Tente novamente.',true);
   }
