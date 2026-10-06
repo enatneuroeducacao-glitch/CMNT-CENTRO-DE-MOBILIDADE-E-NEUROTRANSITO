@@ -217,7 +217,7 @@ async function sendMessage(){
  await notifyUser(S_MSG.target,'message',(S.profile.display_name||'Alguém')+' enviou uma mensagem.');
  el.value='';await openMessageThread(S_MSG.target);
 }
-var CMNT_LIVE={hostStream:null,hostChannel:null,hostPeers:{},hostStreamId:null,viewerChannel:null,viewerPc:null,viewerStreamId:null,viewerId:null,viewerHostId:null};
+var CMNT_LIVE={hostStream:null,hostChannel:null,hostPeers:{},hostStreamId:null,viewerChannel:null,viewerPc:null,viewerStreamId:null,viewerId:null,viewerHostId:null,recorder:null,recordingChunks:[],recordingStartedAt:null};
 
 function cmntLiveTopic(id){return 'cmnt-live-'+id}
 function cmntLiveSend(ch,event,payload){if(!ch)return Promise.resolve();return ch.send({type:'broadcast',event:event,payload:payload})}
@@ -259,7 +259,7 @@ async function cmntStartLive(id){
   var r=await db.from('social_live_streams').update({status:'live',started_at:new Date().toISOString(),ended_at:null}).eq('id',id).eq('host_user_id',S.user.id).select('*').maybeSingle();
   if(r.error||!r.data){stream.getTracks().forEach(function(t){t.stop()});throw new Error(r.error?r.error.message:'Transmissão não encontrada ou sem permissão.')}
   CMNT_LIVE.hostStream=stream;CMNT_LIVE.hostStreamId=id;
-  document.getElementById('modal').innerHTML='<div class="cmnt-live-layer"><div class="cmnt-live-window"><div class="p-5"><div class="p-5 border-b flex items-center justify-between gap-3"><div><div class="text-xs uppercase tracking-widest text-red-600 font-black">● AO VIVO</div><h2 class="text-2xl font-black mt-1">'+esc(r.data.title)+'</h2><p class="text-sm text-slate-500 mt-1">Câmera e microfone ativos · <span id="cmntLiveViewerCount">0</span> espectadores</p></div><button onclick="cmntStopLive()" class="bg-red-600 text-white px-4 py-2.5 rounded-xl font-black">Encerrar transmissão</button></div><div><video id="cmntHostVideo" autoplay muted playsinline controls class="cmnt-live-video"></video><div class="grid md:grid-cols-[1fr_320px] gap-4 mt-4"><div class="p-4 rounded-2xl bg-slate-50"><b>Estúdio CMNT</b><p class="text-sm text-slate-500 mt-1">Mantenha esta janela aberta durante a transmissão. Os espectadores entram pela aba Ao vivo.</p></div><div id="cmntHostChat" class="border rounded-2xl p-4 max-h-56 overflow-auto"><div class="text-sm text-slate-400">O chat aparecerá aqui.</div></div></div></div></div></div>';
+  document.getElementById('modal').innerHTML='<div class="cmnt-live-layer"><div class="cmnt-live-window"><div class="p-5"><div class="p-5 border-b flex items-center justify-between gap-3"><div><div class="text-xs uppercase tracking-widest text-red-600 font-black">● AO VIVO</div><h2 class="text-2xl font-black mt-1">'+esc(r.data.title)+'</h2><p class="text-sm text-slate-500 mt-1">Câmera e microfone ativos · <span id="cmntLiveViewerCount">0</span> espectadores</p></div><div class="flex flex-wrap gap-2"><span id="cmntRecordStatus" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-500 text-sm font-black">NÃO GRAVANDO</span><button id="cmntRecordBtn" onclick="cmntStartRecording()" class="bg-slate-900 text-white px-4 py-2.5 rounded-xl font-black">⏺ Gravar</button><button onclick="cmntStopLive()" class="bg-red-600 text-white px-4 py-2.5 rounded-xl font-black">Encerrar transmissão</button></div></div><div><video id="cmntHostVideo" autoplay muted playsinline controls class="cmnt-live-video"></video><div class="grid md:grid-cols-[1fr_320px] gap-4 mt-4"><div class="p-4 rounded-2xl bg-slate-50"><b>Estúdio CMNT</b><p class="text-sm text-slate-500 mt-1">Mantenha esta janela aberta durante a transmissão. Os espectadores entram pela aba Ao vivo.</p></div><div id="cmntHostChat" class="border rounded-2xl p-4 max-h-56 overflow-auto"><div class="text-sm text-slate-400">O chat aparecerá aqui.</div></div></div></div></div></div>';
   document.getElementById('cmntHostVideo').srcObject=stream;
   await cmntHostConnect();
  }catch(e){toast('Não foi possível iniciar a live: '+(e.message||e),true)}
@@ -317,7 +317,7 @@ async function cmntOpenHostStudio(id){
  if(r.error||!r.data)return toast('Não foi possível localizar sua transmissão.',true);
  if(r.data.status!=='live')return cmntStartLive(id);
  if(!CMNT_LIVE.hostStream)return cmntStartLive(id);
- document.getElementById('modal').innerHTML='<div class="cmnt-live-layer"><div class="cmnt-live-window"><div class="p-5"><div class="p-5 border-b flex items-center justify-between gap-3"><div><div class="text-xs uppercase tracking-widest text-red-600 font-black">● AO VIVO</div><h2 class="text-2xl font-black mt-1">'+esc(r.data.title)+'</h2><p class="text-sm text-slate-500 mt-1">Câmera e microfone ativos · <span id="cmntLiveViewerCount">'+Number(r.data.viewer_count||0)+'</span> espectadores</p></div><button onclick="cmntStopLive()" class="bg-red-600 text-white px-4 py-2.5 rounded-xl font-black">Encerrar transmissão</button></div><div><video id="cmntHostVideo" autoplay muted playsinline controls class="cmnt-live-video"></video><div class="grid md:grid-cols-[1fr_320px] gap-4 mt-4"><div class="p-4 rounded-2xl bg-slate-50"><b>Estúdio CMNT</b><p class="text-sm text-slate-500 mt-1">Câmera e microfone estão ativos. Você pode continuar navegando pela rede social.</p></div><div id="cmntHostChat" class="border rounded-2xl p-4 max-h-56 overflow-auto"><div class="text-sm text-slate-400">O chat aparecerá aqui.</div></div></div></div></div></div>';
+ document.getElementById('modal').innerHTML='<div class="cmnt-live-layer"><div class="cmnt-live-window"><div class="p-5"><div class="p-5 border-b flex items-center justify-between gap-3"><div><div class="text-xs uppercase tracking-widest text-red-600 font-black">● AO VIVO</div><h2 class="text-2xl font-black mt-1">'+esc(r.data.title)+'</h2><p class="text-sm text-slate-500 mt-1">Câmera e microfone ativos · <span id="cmntLiveViewerCount">'+Number(r.data.viewer_count||0)+'</span> espectadores</p></div><div class="flex flex-wrap gap-2"><span id="cmntRecordStatus" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-500 text-sm font-black">NÃO GRAVANDO</span><button id="cmntRecordBtn" onclick="cmntStartRecording()" class="bg-slate-900 text-white px-4 py-2.5 rounded-xl font-black">⏺ Gravar</button><button onclick="cmntStopLive()" class="bg-red-600 text-white px-4 py-2.5 rounded-xl font-black">Encerrar transmissão</button></div></div><div><video id="cmntHostVideo" autoplay muted playsinline controls class="cmnt-live-video"></video><div class="grid md:grid-cols-[1fr_320px] gap-4 mt-4"><div class="p-4 rounded-2xl bg-slate-50"><b>Estúdio CMNT</b><p class="text-sm text-slate-500 mt-1">Câmera e microfone estão ativos. Você pode continuar navegando pela rede social.</p></div><div id="cmntHostChat" class="border rounded-2xl p-4 max-h-56 overflow-auto"><div class="text-sm text-slate-400">O chat aparecerá aqui.</div></div></div></div></div></div>';
  var v=document.getElementById('cmntHostVideo');if(v)v.srcObject=CMNT_LIVE.hostStream;
  if(!CMNT_LIVE.hostChannel)await cmntHostConnect();
 }
@@ -355,9 +355,83 @@ async function cmntCloseViewer(){
  closeModal();
 }
 
+function cmntRecorderMime(){
+ var types=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+ for(var i=0;i<types.length;i++){if(window.MediaRecorder&&MediaRecorder.isTypeSupported(types[i]))return types[i]}
+ return '';
+}
+async function cmntStartRecording(){
+ if(!CMNT_LIVE.hostStream)return toast('Inicie a transmissão antes de gravar.',true);
+ if(CMNT_LIVE.recorder)return toast('A gravação já está em andamento.');
+ if(!window.MediaRecorder)return toast('Este navegador não suporta gravação de vídeo.',true);
+ var mime=cmntRecorderMime();
+ try{
+   var rec=mime?new MediaRecorder(CMNT_LIVE.hostStream,{mimeType:mime}):new MediaRecorder(CMNT_LIVE.hostStream);
+   CMNT_LIVE.recorder=rec;CMNT_LIVE.recordingChunks=[];CMNT_LIVE.recordingStartedAt=Date.now();
+   rec.ondataavailable=function(e){if(e.data&&e.data.size)CMNT_LIVE.recordingChunks.push(e.data)};
+   rec.onerror=function(e){console.error('CMNT MediaRecorder',e);toast('Erro durante a gravação.',true)};
+   rec.start(1000);
+   var b=document.getElementById('cmntRecordBtn');if(b){b.textContent='⏹ Parar e salvar';b.className='bg-red-600 text-white px-4 py-2.5 rounded-xl font-black'}
+   var s=document.getElementById('cmntRecordStatus');if(s)s.textContent='● GRAVANDO';
+   toast('Gravação iniciada.');
+ }catch(e){CMNT_LIVE.recorder=null;toast('Não foi possível iniciar a gravação: '+(e.message||e),true)}
+}
+async function cmntStopRecording(){
+ var rec=CMNT_LIVE.recorder;
+ if(!rec)return null;
+ return new Promise(function(resolve){
+   var chunks=CMNT_LIVE.recordingChunks.slice(),started=CMNT_LIVE.recordingStartedAt||Date.now();
+   rec.onstop=async function(){
+     try{
+       var all=CMNT_LIVE.recordingChunks.length?CMNT_LIVE.recordingChunks.slice():chunks;
+       var blob=new Blob(all,{type:rec.mimeType||'video/webm'});
+       var ext=(rec.mimeType||'').indexOf('mp4')>=0?'mp4':'webm';
+       var path=S.user.id+'/live-recordings/'+Date.now()+'-'+Math.random().toString(36).slice(2)+'.'+ext;
+       var up=await db.storage.from('social-media').upload(path,blob,{contentType:blob.type||'video/webm',upsert:false});
+       if(up.error)throw up.error;
+       var mediaUrl=db.storage.from('social-media').getPublicUrl(path).data.publicUrl;
+       var title='Gravação — '+new Date(started).toLocaleString('pt-BR');
+       var ins=await db.from('social_live_recordings').insert({live_stream_id:CMNT_LIVE.hostStreamId,owner_user_id:S.user.id,title:title,storage_path:path,media_url:mediaUrl,media_type:'video',duration_seconds:Math.max(1,Math.round((Date.now()-started)/1000)),status:'ready'}).select('*').maybeSingle();
+       if(ins.error)throw ins.error;
+       toast('Gravação salva. Você pode publicá-la depois.');
+       resolve(ins.data);
+     }catch(e){
+       console.error('CMNT recording upload',e);
+       toast('A gravação terminou, mas não foi possível salvá-la: '+(e.message||e),true);
+       resolve(null);
+     }finally{
+       CMNT_LIVE.recorder=null;CMNT_LIVE.recordingChunks=[];CMNT_LIVE.recordingStartedAt=null;
+     }
+   };
+   try{rec.stop()}catch(e){CMNT_LIVE.recorder=null;resolve(null)}
+ });
+}
+function cmntPublishRecording(id){
+ return db.from('social_live_recordings').select('*').eq('id',id).eq('owner_user_id',S.user.id).maybeSingle().then(async function(r){
+   if(r.error||!r.data)return toast('Gravação não encontrada.',true);
+   var content=window.prompt('Escreva o texto da publicação:',r.data.title||'Gravação da CMNT Live');
+   if(content===null)return;
+   content=content.trim()||r.data.title;
+   var p=await db.from('social_posts').insert({author_id:S.user.id,content:content,media_url:r.data.media_url,media_type:'video'}).select('id').maybeSingle();
+   if(p.error)return toast('Não foi possível publicar a gravação: '+p.error.message,true);
+   var u=await db.from('social_live_recordings').update({status:'published',published_post_id:p.data.id}).eq('id',id).eq('owner_user_id',S.user.id);
+   if(u.error)return toast('A publicação foi criada, mas não foi possível atualizar o registro da gravação.',true);
+   toast('Gravação publicada na rede social.');renderLive();
+ });
+}
+async function renderLiveRecordings(){
+ var box=document.getElementById('liveRecordings');if(!box||!S.user)return;
+ var r=await db.from('social_live_recordings').select('id,title,media_url,duration_seconds,status,created_at').eq('owner_user_id',S.user.id).neq('status','deleted').order('created_at',{ascending:false}).limit(20);
+ var rows=r.error?[]:(r.data||[]);
+ box.innerHTML=rows.length?rows.map(function(x){
+   return '<div class="card rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3"><div><div class="font-black">🎬 '+esc(x.title)+'</div><div class="text-xs text-slate-500 mt-1">'+new Date(x.created_at).toLocaleString('pt-BR')+' · '+(x.duration_seconds||0)+'s · '+(x.status==='published'?'Publicado':'Pronto para publicar')+'</div></div><div class="flex gap-2"><a href="'+esc(x.media_url)+'" target="_blank" rel="noopener" class="px-3 py-2 rounded-xl bg-slate-100 font-bold">▶ Ver</a>'+(x.status!=='published'?'<button onclick="cmntPublishRecording(\''+x.id+'\')" class="px-3 py-2 rounded-xl bg-[#0b8b55] text-white font-bold">Publicar</button>':'')+'</div></div>'
+ }).join(''):'<div class="text-sm text-slate-400">Nenhuma gravação salva ainda.</div>';
+}
+
 async function cmntStopLive(){
  if(!CMNT_LIVE.hostStreamId)return;
  var id=CMNT_LIVE.hostStreamId;
+ if(CMNT_LIVE.recorder){await cmntStopRecording()}
  try{if(CMNT_LIVE.hostChannel)await cmntLiveSend(CMNT_LIVE.hostChannel,'control',{kind:'end'})}catch(e){}
  try{await db.from('social_live_streams').update({status:'ended',ended_at:new Date().toISOString()}).eq('id',id).eq('host_user_id',S.user.id)}catch(e){}
  if(CMNT_LIVE.hostChannel){try{await db.removeChannel(CMNT_LIVE.hostChannel)}catch(e){}}
@@ -371,7 +445,7 @@ async function renderLive(){
  var section=document.getElementById('liveData');if(!section)return;section.innerHTML='<div class="card rounded-3xl p-6 text-slate-400">Carregando transmissões...</div>';var rows=await loadLiveStreams();
  section.innerHTML=(rows.length?rows.map(function(x){var live=x.status==='live';var own=S.user&&x.host_user_id===S.user.id;var actions=live?(own?'<button onclick="cmntOpenHostStudio(\''+x.id+'\')" class="bg-[#0b8b55] text-white px-4 py-2.5 rounded-xl font-black">🎥 Abrir câmera</button><button onclick="cmntStopLive()" class="bg-red-50 text-red-600 px-4 py-2.5 rounded-xl font-black">Encerrar</button>':'<button onclick="cmntOpenLive(\''+x.id+'\')" class="bg-[#0b8b55] text-white px-4 py-2.5 rounded-xl font-black">▶ Entrar na live</button>'):own?'<button onclick="cmntStartLive(\''+x.id+'\')" class="bg-[#0b8b55] text-white px-4 py-2.5 rounded-xl font-black">🔴 Iniciar</button>':'';return'<article class="card rounded-3xl p-5"><div class="flex flex-wrap items-center justify-between gap-3"><div><span class="text-xs font-black '+(live?'text-red-600':'text-emerald-700')+'">'+(live?'● AO VIVO':'AGENDADA')+'</span><h3 class="text-xl font-black mt-1">'+esc(x.title)+'</h3><p class="text-slate-500 mt-1">'+esc(x.description||'')+'</p><div class="text-xs text-slate-400 mt-2">'+esc(x.category||'Mobilidade')+' · '+(x.allow_chat?'chat ativo':'chat desativado')+' · '+Number(x.viewer_count||0)+' espectadores</div></div><div class="text-right"><div class="text-xs font-bold text-slate-500">'+(x.scheduled_at?new Date(x.scheduled_at).toLocaleString('pt-BR'):'')+'</div><div class="flex flex-wrap gap-2 justify-end mt-3">'+actions+'</div></div></div></article>'}).join(''):'<div class="card rounded-3xl p-8 text-center text-slate-500">Nenhuma transmissão agendada ou ao vivo no momento.</div>');
 }
-function live(){setTimeout(renderLive,0);return'<section><div class="flex flex-wrap items-end justify-between gap-3 mb-5"><div><small class="uppercase tracking-widest text-red-600 font-black">CMNT LIVE</small><h1 class="text-3xl font-black">Transmissões</h1><p class="text-slate-500 mt-1">Câmera, microfone, vídeo em tempo real, chat, reações e agendamento.</p></div>'+(S.user?'<button onclick="createLiveSchedule()" class="bg-[#07111f] text-white px-5 py-3 rounded-2xl font-black">+ Nova transmissão</button>':'')+'</div><div id="liveData" class="space-y-4"></div></section>'}
+function live(){setTimeout(function(){renderLive();renderLiveRecordings()},0);return'<section><div class="flex flex-wrap items-end justify-between gap-3 mb-5"><div><small class="uppercase tracking-widest text-red-600 font-black">CMNT LIVE</small><h1 class="text-3xl font-black">Transmissões</h1><p class="text-slate-500 mt-1">Câmera, microfone, vídeo em tempo real, chat, reações, agendamento e gravação.</p></div>'+(S.user?'<button onclick="createLiveSchedule()" class="bg-[#07111f] text-white px-5 py-3 rounded-2xl font-black">+ Nova transmissão</button>':'')+'</div><div id="liveData" class="space-y-4"></div>'+(S.user?'<div class="mt-8"><h2 class="text-2xl font-black mb-3">Minhas gravações</h2><div id="liveRecordings" class="space-y-3"></div></div>':'')+'</section>'}
 function saved(){var x=S.posts.filter(function(p){return S.saved.has(p.id)});return'<section><h1 class="text-3xl font-black mb-5">Salvos</h1><div class="space-y-4">'+(x.length?x.map(post).join(''):'<div class="card rounded-3xl p-10 text-center text-slate-500">Você ainda não salvou publicações.</div>')+'</div></section>'}
 async function openProfile(id){
   if(!id)return;
