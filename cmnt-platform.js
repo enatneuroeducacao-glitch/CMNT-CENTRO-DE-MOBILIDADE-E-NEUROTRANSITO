@@ -97,7 +97,7 @@
       card('<h3 class="font-black">Aplicação no trânsito</h3><p class="text-sm text-slate-600 mt-2 leading-6">'+m.practice+'</p>')+'</div>'+
       card('<h3 class="font-black">Perguntas orientadoras</h3><div class="grid md:grid-cols-3 gap-3 mt-4">'+m.questions.map(function(qt){return '<div class="p-4 rounded-2xl bg-slate-50 text-sm font-semibold text-slate-700">'+qt+'</div>'}).join('')+'</div>')+
       card('<h3 class="font-black">Conexões no ecossistema CMNT</h3><p class="text-sm text-slate-600 mt-2">'+m.related+'</p><div class="mt-4 flex flex-wrap gap-2"><span class="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-black">NEXUS '+m.n+'</span><span class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs font-black">Competência longitudinal</span><span class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs font-black">Mobilidade segura</span></div>')+
-      '<div class="flex flex-wrap gap-3 mt-5"><button onclick="cmntNexusAssessModule(\\''+m.code+'\\')" class="bg-[#0b8b55] text-white px-5 py-3 rounded-xl font-black">Avaliar '+m.title+'</button><button onclick="cmntNexusBack()" class="px-5 py-3 rounded-xl bg-slate-100 font-black">Ver os 12 módulos</button></div>';
+      '<div class="flex flex-wrap gap-3 mt-5"><button type="button" data-cmnt-nexus-assess="'+m.code+'" class="bg-[#0b8b55] text-white px-5 py-3 rounded-xl font-black">Avaliar '+m.title+'</button><button type="button" onclick="cmntNexusBack()" class="px-5 py-3 rounded-xl bg-slate-100 font-black">Ver os 12 módulos</button></div>';
   }
   if(!window.__cmntNexusClickBound){
     document.addEventListener('click',function(ev){
