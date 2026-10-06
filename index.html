@@ -541,7 +541,13 @@ function cmntCourseProgress(key){try{return JSON.parse(localStorage.getItem("cmn
 function cmntSaveCourseProgress(key,data){try{localStorage.setItem("cmnt_course_"+key,JSON.stringify(data))}catch(e){}}
 function cmntStartQuiz(key,idx){var q=(CMNT_COURSES[key]&&CMNT_COURSES[key].quiz||[])[idx];if(!q)return;var options=q.options.map(function(o,i){return'<label class="block border border-slate-200 rounded-xl p-3 cursor-pointer hover:bg-slate-50"><input type="radio" name="cq_'+idx+'" value="'+i+'" class="mr-2">'+esc(o)+'</label>'}).join('');document.getElementById("modal").innerHTML='<div class="fixed inset-0 modal z-[80] grid place-items-center p-4 overflow-auto"><div class="bg-white rounded-3xl p-6 w-full max-w-xl"><div class="text-xs uppercase tracking-widest text-emerald-700 font-black">Questionário de fixação</div><h2 class="text-2xl font-black mt-2">'+esc(q.question)+'</h2><div class="space-y-2 mt-5">'+options+'</div><button onclick="cmntAnswerQuiz(\''+key+'\','+idx+')" class="w-full mt-5 bg-[#0b8b55] text-white rounded-2xl p-3 font-black">Responder</button><button onclick="closeModal()" class="w-full mt-2 text-slate-500 p-2">Fechar</button></div></div>'}
 function cmntAnswerQuiz(key,idx){var q=CMNT_COURSES[key].quiz[idx],el=document.querySelector('input[name="cq_'+idx+'"]:checked');if(!el)return toast("Selecione uma resposta.",true);var ok=Number(el.value)===q.answer;cmntLog(key,"quiz_answered",{question:idx+1,correct:ok});document.getElementById("modal").innerHTML='<div class="fixed inset-0 modal z-[80] grid place-items-center p-4"><div class="bg-white rounded-3xl p-6 w-full max-w-xl"><div class="text-xs uppercase tracking-widest '+(ok?"text-emerald-700":"text-red-600")+' font-black">'+(ok?"RESPOSTA CORRETA":"REVISÃO NECESSÁRIA")+'</div><h2 class="text-2xl font-black mt-2">'+(ok?"Muito bem.":"A resposta correta merece uma revisão.")+'</h2><p class="text-slate-600 mt-3 leading-7">'+esc(q.explanation)+'</p><button onclick="closeModal()" class="w-full mt-5 bg-[#07111f] text-white rounded-2xl p-3 font-black">Continuar</button></div></div>'}
-function cmntOpenNexus(i){var x=CMNT_NEXUS_DETAILS[i];if(!x)return;document.getElementById("modal").innerHTML='<div class="fixed inset-0 modal z-[80] grid place-items-center p-4 overflow-auto"><div class="bg-white rounded-3xl p-6 w-full max-w-2xl my-6"><div class="text-xs uppercase tracking-widest text-emerald-700 font-black">NEXUS 12 · PILAR '+(i+1)+'</div><h2 class="text-3xl font-black mt-2">'+esc(x[0])+'</h2><p class="text-slate-600 mt-4 leading-7">'+esc(x[1])+'</p><div class="mt-5 p-4 rounded-2xl bg-emerald-50 border border-emerald-100"><b>Aplicação prática</b><p class="text-slate-600 mt-2">'+esc(x[2])+'</p></div><div class="mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-200"><b>Questão-chave</b><p class="text-slate-600 mt-2">'+esc(x[3])+'</p></div><button onclick="cmntLog('nexus12','lesson_completed',{pillar:' + i + '});closeModal()" class="w-full mt-5 bg-[#0b8b55] text-white rounded-2xl p-3 font-black">Marcar aula como estudada</button></div></div>'}
+function cmntOpenNexus(i){
+ var x=CMNT_NEXUS_DETAILS[i];if(!x)return;
+ var html='<div class="fixed inset-0 modal z-[80] grid place-items-center p-4 overflow-auto"><div class="bg-white rounded-3xl p-6 w-full max-w-2xl my-6"><div class="text-xs uppercase tracking-widest text-emerald-700 font-black">NEXUS 12 · PILAR '+(i+1)+'</div><h2 class="text-3xl font-black mt-2">'+esc(x[0])+'</h2><p class="text-slate-600 mt-4 leading-7">'+esc(x[1])+'</p><div class="mt-5 p-4 rounded-2xl bg-emerald-50 border border-emerald-100"><b>Aplicação prática</b><p class="text-slate-600 mt-2">'+esc(x[2])+'</p></div><div class="mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-200"><b>Questão-chave</b><p class="text-slate-600 mt-2">'+esc(x[3])+'</p></div><button onclick="cmntMarkNexus('+i+')" class="w-full mt-5 bg-[#0b8b55] text-white rounded-2xl p-3 font-black">Marcar aula como estudada</button><button onclick="closeModal()" class="w-full mt-2 p-2 text-slate-500">Fechar</button></div></div>';
+ document.getElementById("modal").innerHTML=html;
+}
+function cmntMarkNexus(i){cmntLog("nexus12","lesson_completed",{pillar:i+1});try{localStorage.setItem("cmnt_nexus_"+i,"done")}catch(e){}closeModal();toast("Pilar "+(i+1)+" marcado como estudado.");}
+
 function cmntCourse(key){
  var d=CMNT_COURSES[key],p=cmntCourseProgress(key),done=p.done||0;
  if(!d)return "";
@@ -551,12 +557,25 @@ function cmntCourse(key){
 }
 function cmntMarkLesson(key,i){var p=cmntCourseProgress(key);p["lesson"+i]=true;p.done=Object.keys(p).filter(function(k){return /^lesson\d+$/.test(k)&&p[k]}).length;cmntSaveCourseProgress(key,p);cmntLog(key,"lesson_completed",{lesson:i+1});render()}
 
+function cmntBuildDefaultQuizzes(){
+ Object.keys(CMNT_COURSES).forEach(function(key){
+  var d=CMNT_COURSES[key];
+  d.quiz=[
+   {question:"Qual é o objetivo central da Aula 1 deste módulo?",options:[d.lessons[0][2],d.lessons[1][2],d.lessons[2][2]],answer:0,explanation:"A Aula 1 estabelece a base conceitual do módulo. O objetivo indicado no conteúdo é o ponto de partida para avançar às aulas seguintes."},
+   {question:"Qual prática corresponde melhor à Aula 2?",options:[d.lessons[1][2],d.lessons[2][2],d.lessons[0][2]],answer:0,explanation:"A Aula 2 aprofunda o método ou a aplicação intermediária do módulo. Revise o conteúdo e relacione-o ao objetivo apresentado."},
+   {question:"Qual competência é enfatizada na Aula 3?",options:[d.lessons[2][2],d.lessons[0][2],d.lessons[1][2]],answer:0,explanation:"A Aula 3 fecha a trilha com integração, responsabilidade ou aplicação avançada. Releia a aula para consolidar o conceito."}
+  ];
+ });
+}
+cmntBuildDefaultQuizzes();
+
 function cmntRenderContent(key){
  var d=CMNT_SCI_SECTIONS[key]||CMNT_SCI_SECTIONS.overview;
  var html='<div class="space-y-4"><div class="brand text-white rounded-3xl p-6"><div class="text-xs uppercase tracking-[.2em] text-emerald-300 font-black">'+esc(d.kicker)+'</div><h2 class="text-3xl font-black mt-2">'+esc(d.title)+'</h2><p class="text-white/80 mt-3 leading-7 max-w-4xl">'+esc(d.intro)+'</p></div>';
- if(key==="nexus12")html+='<div class="grid md:grid-cols-2 gap-4">'+NEXUS12.map(function(x,i){return'<article class="card rounded-3xl p-5"><div class="text-xs font-black text-emerald-700">PILAR '+(i+1)+'</div><h3 class="text-xl font-black mt-1">'+esc(x[0])+'</h3><p class="text-slate-600 mt-2 leading-7">'+esc(x[1])+'</p></article>'}).join('')+'</div>';
+ if(key==="nexus12")html+='<div class="grid md:grid-cols-2 gap-4">'+NEXUS12.map(function(x,i){return'<article class="card rounded-3xl p-5"><div class="flex justify-between gap-2"><div class="text-xs font-black text-emerald-700">PILAR '+(i+1)+'</div><span class="text-xs text-slate-400">'+(localStorage.getItem("cmnt_nexus_"+i)?"ESTUDADO":"AULA")+"</span></div><h3 class="text-xl font-black mt-1">'+esc(x[0])+'</h3><p class="text-slate-600 mt-2 leading-7">'+esc(x[1])+'</p><button onclick="cmntOpenNexus('+i+')" class="mt-4 px-4 py-2 rounded-xl bg-[#07111f] text-white font-bold">Abrir aula</button></article>'}).join('')+'</div><div class="card rounded-3xl p-5 mt-5"><div class="text-xs uppercase tracking-widest text-emerald-700 font-black">TRILHA COMPLETA</div><h3 class="text-2xl font-black mt-1">NEXUS 12 — curso de progressão de competências</h3><p class="text-slate-600 mt-2 leading-7">Estude os 12 pilares, abra cada aula, faça a aplicação prática e registre sua progressão. O objetivo é desenvolver competências, não classificar pessoas de forma definitiva.</p></div>';
  else html+='<div class="grid md:grid-cols-2 gap-4">'+d.blocks.map(function(x){return cmntBlock(x[0],x[1])}).join('')+'</div>';
  if(key==="hsi")html+=cmntHSIQuestionnaire();
+ if(key!=="hsi"&&key!=="overview"&&key!=="nexus12")html+=cmntCourse(key);
  if(["research_lab","researcher","evidence","academy","observatory","events","editorial","scientific_communities","institutions","governance","knowledge_base","integrations","scientific_ai"].indexOf(key)>=0){html+='<div id="cmntData" class="mt-5"><div class="card rounded-3xl p-6 text-slate-400">Conectando este módulo ao banco científico...</div></div>';setTimeout(function(){loadCmntData(key)},0)}
  return html+'</div>';
 }
