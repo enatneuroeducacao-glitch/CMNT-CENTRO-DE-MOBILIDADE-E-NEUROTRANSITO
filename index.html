@@ -237,27 +237,133 @@ async function loadLiveStreams(){
  return r.error?[]:(r.data||[]);
 }
 
+var CMNT_LIVE_FORM={guestResults:[],guests:[],searchSeq:0};
+
+function cmntLiveGuestSearch(){
+ var input=document.getElementById('liveGuestSearch'),box=document.getElementById('liveGuestResults');
+ if(!input||!box)return;
+ var q=input.value.trim().replace(/^@+/,'');
+ if(q.length<2){box.classList.add('hidden');box.innerHTML='';return}
+ var seq=++CMNT_LIVE_FORM.searchSeq;
+ Promise.all([
+   db.from('social_profiles').select('id,display_name,username,avatar_url').ilike('display_name','%'+q+'%').limit(8),
+   db.from('social_profiles').select('id,display_name,username,avatar_url').ilike('username','%'+q+'%').limit(8)
+ ]).then(function(rs){
+   if(seq!==CMNT_LIVE_FORM.searchSeq)return;
+   var map={};rs.forEach(function(r){(r.data||[]).forEach(function(x){if(x.id&&x.id!==S.user.id)map[x.id]=x})});
+   CMNT_LIVE_FORM.guestResults=Object.keys(map).map(function(id){return map[id]}).filter(function(x){return !CMNT_LIVE_FORM.guests.some(function(g){return g.id===x.id})}).slice(0,8);
+   if(!CMNT_LIVE_FORM.guestResults.length){box.innerHTML='<div class="px-3 py-3 text-sm text-slate-500">Nenhum usuário encontrado.</div>';box.classList.remove('hidden');return}
+   box.innerHTML=CMNT_LIVE_FORM.guestResults.map(function(x){
+     return '<button type="button" class="w-full text-left px-3 py-3 hover:bg-slate-50 flex items-center gap-3" onclick="cmntSelectLiveGuest('+JSON.stringify(x.id)+')"><img src="'+esc(x.avatar_url||'https://api.dicebear.com/9.x/initials/svg?seed='+encodeURIComponent(x.display_name||x.username||'ENAT'))+'" class="w-9 h-9 rounded-xl object-cover"><span class="min-w-0"><b class="block truncate">'+esc(x.display_name||'Usuário')+'</b><small class="text-slate-500">@'+esc(x.username||'usuario')+'</small></span></button>';
+   }).join('');
+   box.classList.remove('hidden');
+ }).catch(function(e){console.warn('CMNT live guest search',e);box.classList.add('hidden')});
+}
+
+function cmntSelectLiveGuest(id){
+ var x=CMNT_LIVE_FORM.guestResults.find(function(g){return g.id===id});if(!x)return;
+ if(CMNT_LIVE_FORM.guests.length>=4)return toast('A Live permite até 4 convidados no palco.',true);
+ if(CMNT_LIVE_FORM.guests.some(function(g){return g.id===id}))return;
+ CMNT_LIVE_FORM.guests.push({id:x.id,display_name:x.display_name||'Usuário',username:x.username||'usuario'});
+ var input=document.getElementById('liveGuestSearch');if(input)input.value='';
+ var box=document.getElementById('liveGuestResults');if(box){box.classList.add('hidden');box.innerHTML=''}
+ cmntRenderLiveGuestChips();
+}
+
+function cmntRemoveLiveGuest(id){
+ CMNT_LIVE_FORM.guests=CMNT_LIVE_FORM.guests.filter(function(g){return g.id!==id});
+ cmntRenderLiveGuestChips();
+}
+
+function cmntRenderLiveGuestChips(){
+ var box=document.getElementById('liveGuestChips');if(!box)return;
+ box.innerHTML=CMNT_LIVE_FORM.guests.map(function(g){
+   return '<span class="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-100 text-emerald-800 rounded-xl px-3 py-2 text-sm font-bold"><span>@'+esc(g.username)+'</span><button type="button" onclick="cmntRemoveLiveGuest('+JSON.stringify(g.id)+')" class="text-emerald-700 text-lg leading-none">×</button></span>';
+ }).join('');
+ var count=document.getElementById('liveGuestCount');if(count)count.textContent=CMNT_LIVE_FORM.guests.length+'/4';
+}
+
+function cmntLiveFormData(){
+ var theme=(document.getElementById('liveTheme')||{}).value||'';
+ var desc=(document.getElementById('liveDesc')||{}).value||'';
+ var cat=(document.getElementById('liveCat')||{}).value||'';
+ var date=(document.getElementById('liveDate')||{}).value||'';
+ var visibility=(document.getElementById('liveVisibility')||{}).value||'public';
+ var p1=((document.getElementById('livePresenter1')||{}).value||'').trim();
+ var p2=((document.getElementById('livePresenter2')||{}).value||'').trim();
+ var publish=!!((document.getElementById('livePublishFeed')||{}).checked);
+ return {theme:theme.trim(),desc:desc.trim(),cat:cat.trim()||'Trânsito e Mobilidade',date:date,visibility:visibility,presenters:[p1,p2].filter(Boolean),guests:CMNT_LIVE_FORM.guests.slice(),publish:publish};
+}
+
+function cmntLiveFeedText(data,isLive){
+ var guestText=data.guests.length?data.guests.map(function(g){return '@'+g.username}).join(', '):'Nenhum convidado definido';
+ var presenterText=data.presenters.length?data.presenters.join(' e '):'Apresentação ENAT';
+ var when=data.date?new Date(data.date).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'agora';
+ return (isLive?'🔴 AO VIVO — ':'📅 LIVE AGENDADA — ')+data.theme+'\n\nTema: '+data.theme+'\nApresentadores: '+presenterText+'\nConvidados: '+guestText+'\nHorário: '+when+'\n\n'+(data.desc||'Transmissão da Rede ENAT sobre trânsito, mobilidade e segurança viária.');
+}
+
+async function cmntPublishLiveToFeed(liveId,data,isLive){
+ if(!data.publish)return null;
+ var p=await db.from('social_posts').insert({author_id:S.user.id,content:cmntLiveFeedText(data,isLive),media_url:null,media_type:null}).select('id').maybeSingle();
+ if(p.error){toast('A Live foi criada, mas não foi publicada no feed: '+p.error.message,true);return null}
+ await db.from('social_live_streams').update({feed_post_id:p.data.id}).eq('id',liveId).eq('host_user_id',S.user.id);
+ return p.data.id;
+}
+
+function cmntLiveScheduleMarkup(){
+ return '<div class="fixed inset-0 modal z-[80] grid place-items-center p-4 overflow-auto">'+
+ '<div class="bg-white rounded-3xl shadow-2xl p-5 sm:p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto my-5">'+
+ '<div class="flex justify-between items-start gap-4">'+
+ '<div><div class="text-xs uppercase tracking-widest text-red-600 font-black">CMNT LIVE</div><h2 class="text-2xl font-black mt-1">Nova transmissão</h2><p class="text-sm text-slate-500 mt-1">Configure a Live antes de entrar no palco.</p></div>'+
+ '<button type="button" onclick="closeModal()" class="shrink-0 w-10 h-10 rounded-xl bg-slate-100 text-slate-500 text-2xl font-black">×</button></div>'+
+ '<div class="grid md:grid-cols-2 gap-4 mt-5">'+
+ '<div class="space-y-3">'+
+ '<div><label class="text-xs font-black text-slate-600">Tema da Live *</label><input id="liveTheme" class="w-full bg-slate-100 rounded-2xl p-3 mt-1.5" placeholder="Ex.: Neurociência e segurança viária"></div>'+
+ '<div><label class="text-xs font-black text-slate-600">Descrição / objetivo</label><textarea id="liveDesc" class="w-full bg-slate-100 rounded-2xl p-3 mt-1.5" rows="4" placeholder="Explique o que será abordado na transmissão."></textarea></div>'+
+ '<div><label class="text-xs font-black text-slate-600">Categoria</label><input id="liveCat" class="w-full bg-slate-100 rounded-2xl p-3 mt-1.5" value="Trânsito e Mobilidade" placeholder="Categoria"></div>'+
+ '<div class="grid grid-cols-2 gap-3"><div><label class="text-xs font-black text-slate-600">Data e horário *</label><input id="liveDate" type="datetime-local" class="w-full bg-slate-100 rounded-2xl p-3 mt-1.5"></div><div><label class="text-xs font-black text-slate-600">Visibilidade</label><select id="liveVisibility" class="w-full bg-slate-100 rounded-2xl p-3 mt-1.5"><option value="public">Público</option><option value="community">Comunidade</option></select></div></div>'+
+ '</div>'+
+ '<div class="space-y-3">'+
+ '<div class="rounded-2xl border border-slate-200 p-4"><div class="flex items-center justify-between"><div><b>Apresentadores</b><p class="text-xs text-slate-500 mt-1">Até 2 no palco.</p></div><span class="text-xs font-black bg-slate-100 px-2.5 py-1 rounded-full">2 vagas</span></div>'+
+ '<input id="livePresenter1" class="w-full bg-slate-100 rounded-xl p-3 mt-3" value="'+esc((S.profile&&S.profile.display_name)||'')+'" placeholder="Nome do apresentador 1">'+
+ '<input id="livePresenter2" class="w-full bg-slate-100 rounded-xl p-3 mt-2" placeholder="Nome do apresentador 2 (opcional)"></div>'+
+ '<div class="rounded-2xl border border-slate-200 p-4"><div class="flex items-center justify-between"><div><b>Convidados</b><p class="text-xs text-slate-500 mt-1">Digite o nome para encontrar o @.</p></div><span id="liveGuestCount" class="text-xs font-black bg-slate-100 px-2.5 py-1 rounded-full">0/4</span></div>'+
+ '<div class="relative mt-3"><input id="liveGuestSearch" oninput="cmntLiveGuestSearch()" onkeydown="if(event.key===\'Enter\')event.preventDefault()" class="w-full bg-slate-100 rounded-xl p-3" placeholder="Pesquisar por nome ou @usuario"><div id="liveGuestResults" class="hidden absolute left-0 right-0 top-full mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden z-[100]"></div></div>'+
+ '<div id="liveGuestChips" class="flex flex-wrap gap-2 mt-3 min-h-2"></div></div>'+
+ '<label class="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 cursor-pointer"><input id="livePublishFeed" type="checkbox" checked class="mt-1 w-4 h-4"><span><b class="block">Publicar a Live no feed</b><small class="text-emerald-800/80">Cria automaticamente uma publicação com tema, horário, apresentadores e @ dos convidados.</small></span></label>'+
+ '</div></div>'+
+ '<div class="flex flex-col sm:flex-row gap-3 mt-5"><button type="button" onclick="saveLiveSchedule()" class="flex-1 bg-slate-100 text-slate-800 rounded-2xl p-3 font-black">📅 Agendar Live</button><button type="button" onclick="createLiveNow()" class="flex-1 bg-[#0b8b55] text-white rounded-2xl p-3 font-black">🔴 Transmitir agora</button></div>'+
+ '<p class="text-xs text-slate-500 mt-4 leading-5">A câmera e o microfone serão solicitados somente ao iniciar a transmissão. Os convidados selecionados receberão o @ no anúncio da Live; a entrada no palco continua sujeita à aprovação do apresentador.</p>'+
+ '</div></div>';
+}
+
 async function createLiveSchedule(){
  if(!S.user)return auth();
- document.getElementById('modal').innerHTML='<div class="fixed inset-0 modal z-[80] grid place-items-center p-4 overflow-auto"><div class="bg-white rounded-3xl p-6 w-full max-w-lg my-5"><div class="flex justify-between items-center"><div><div class="text-xs uppercase tracking-widest text-red-600 font-black">CMNT LIVE</div><h2 class="text-2xl font-black mt-1">Nova transmissão</h2></div><button onclick="closeModal()" class="text-2xl text-slate-400">×</button></div><input id="liveTitle" class="w-full bg-slate-100 rounded-2xl p-3 mt-5" placeholder="Título *"><textarea id="liveDesc" class="w-full bg-slate-100 rounded-2xl p-3 mt-3" rows="3" placeholder="Descrição"></textarea><input id="liveCat" class="w-full bg-slate-100 rounded-2xl p-3 mt-3" placeholder="Categoria (ex.: segurança viária)"><div class="grid sm:grid-cols-2 gap-3 mt-3"><input id="liveDate" type="datetime-local" class="w-full bg-slate-100 rounded-2xl p-3" title="Data e hora"><select id="liveVisibility" class="w-full bg-slate-100 rounded-2xl p-3"><option value="public">Público</option><option value="community">Comunidade</option></select></div><div class="grid sm:grid-cols-2 gap-3 mt-4"><button onclick="saveLiveSchedule()" class="bg-slate-100 text-slate-800 rounded-2xl p-3 font-black">Agendar</button><button onclick="createLiveNow()" class="bg-[#0b8b55] text-white rounded-2xl p-3 font-black">🔴 Transmitir agora</button></div><p class="text-xs text-slate-500 mt-4 leading-5">A transmissão usa câmera e microfone do navegador. O vídeo é distribuído em tempo real para os espectadores conectados.</p></div></div>';
+ CMNT_LIVE_FORM={guestResults:[],guests:[],searchSeq:0};
+ document.getElementById('modal').innerHTML=cmntLiveScheduleMarkup();
+ var d=new Date(Date.now()+30*60000);d.setSeconds(0,0);
+ var date=document.getElementById('liveDate');if(date)date.value=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+ cmntRenderLiveGuestChips();
 }
 
 async function saveLiveSchedule(){
- var title=document.getElementById('liveTitle').value.trim(),desc=document.getElementById('liveDesc').value.trim(),cat=document.getElementById('liveCat').value.trim()||'Mobilidade',date=document.getElementById('liveDate').value,visibility=document.getElementById('liveVisibility').value;
- if(!title||!date)return toast('Informe título e data da transmissão.',true);
- var r=await db.from('social_live_streams').insert({host_user_id:S.user.id,title:title,description:desc,category:cat,visibility:visibility,status:'scheduled',scheduled_at:new Date(date).toISOString()}).select('*').maybeSingle();
+ var data=cmntLiveFormData();
+ if(!data.theme||!data.date||!data.presenters.length)return toast('Informe o tema, horário e pelo menos um apresentador.',true);
+ var r=await db.from('social_live_streams').insert({host_user_id:S.user.id,title:data.theme,theme:data.theme,description:data.desc,category:data.cat,visibility:data.visibility,status:'scheduled',scheduled_at:new Date(data.date).toISOString(),presenter_names:data.presenters,guest_mentions:data.guests,publish_to_feed:data.publish}).select('*').maybeSingle();
  if(r.error)return toast('Não foi possível agendar: '+r.error.message,true);
- closeModal();toast('Transmissão agendada.');renderLive();
+ if(data.publish)await cmntPublishLiveToFeed(r.data.id,data,false);
+ closeModal();toast('Live agendada com os participantes definidos.');renderLive();
 }
 
 async function createLiveNow(){
- var title=document.getElementById('liveTitle').value.trim(),desc=document.getElementById('liveDesc').value.trim(),cat=document.getElementById('liveCat').value.trim()||'Mobilidade',visibility=document.getElementById('liveVisibility').value;
- if(!title)return toast('Informe o título da transmissão.',true);
- var r=await db.from('social_live_streams').insert({host_user_id:S.user.id,title:title,description:desc,category:cat,visibility:visibility,status:'scheduled',scheduled_at:new Date().toISOString()}).select('*').maybeSingle();
+ var data=cmntLiveFormData();
+ if(!data.theme||!data.presenters.length)return toast('Informe o tema e pelo menos um apresentador.',true);
+ if(!data.date){var now=new Date();data.date=new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,16)}
+ var r=await db.from('social_live_streams').insert({host_user_id:S.user.id,title:data.theme,theme:data.theme,description:data.desc,category:data.cat,visibility:data.visibility,status:'scheduled',scheduled_at:new Date().toISOString(),presenter_names:data.presenters,guest_mentions:data.guests,publish_to_feed:data.publish}).select('*').maybeSingle();
  if(r.error)return toast('Não foi possível criar a transmissão: '+r.error.message,true);
+ if(data.publish)await cmntPublishLiveToFeed(r.data.id,data,true);
  closeModal();await cmntStartLive(r.data.id);
 }
-
 function cmntEnsureHostControls(){
  var status=document.getElementById('cmntRecordStatus');if(!status)return;
  var bar=status.parentElement;if(!bar)return;
