@@ -678,13 +678,25 @@ async function cmntNeuroDriveCatalog(){
  }).join('');
  return '<section class="card rounded-3xl p-6"><div class="flex flex-wrap items-end justify-between gap-4"><div><div class="text-xs uppercase tracking-widest text-emerald-700 font-black">CATÁLOGO DE FORMAÇÃO</div><h3 class="text-2xl sm:text-3xl font-black mt-1">Cursos disponíveis na Rede Neurotrânsito</h3><p class="text-slate-600 mt-2 leading-7 max-w-3xl">Explore as formações diretamente na rede social. O NeuroDrive permanece como o sistema profissional para gestão e aprofundamento da atividade do instrutor.</p></div><div class="px-4 py-3 rounded-2xl bg-emerald-50 text-emerald-800 font-black whitespace-nowrap">CURSOS ENAT</div></div><div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4 mt-6">'+cards+'</div></section>';
 }
+function cmntAcademyCourses(){
+ var courses=[
+  ["Neuroeducação Aplicada ao Trânsito","APROFUNDAMENTO","Aprofunde conhecimentos sobre aprendizagem, atenção, memória, emoções e comportamento aplicados à formação de condutores.","6 módulos","Acesso gratuito + certificado opcional"],
+  ["Fatores Humanos no Trânsito","APROFUNDAMENTO","Estude os principais fatores humanos relacionados ao comportamento do condutor e à segurança viária.","6 módulos","Acesso gratuito + certificado opcional"],
+  ["HSI-DOTH-P na Prática","ESPECIALIZAÇÃO","Aprenda a compreender e utilizar o HSI-DOTH-P como instrumento de acompanhamento dos fatores humanos durante o processo de formação.","8 módulos","Acesso gratuito + certificado opcional"],
+  ["Direção Defensiva e Percepção de Risco","APROFUNDAMENTO","Aprofunde técnicas de percepção, antecipação e gerenciamento de riscos durante a condução.","6 módulos","Acesso gratuito + certificado opcional"],
+  ["Metodologia da Aula Prática","PEDAGÓGICO","Aprimore a organização, condução e avaliação das aulas práticas de formação de condutores.","7 módulos","Acesso gratuito + certificado opcional"],
+  ["Inteligência Emocional para Instrutores","DESENVOLVIMENTO","Desenvolva estratégias para lidar com emoções, conflitos, ansiedade e situações de pressão durante a formação.","7 módulos","Acesso gratuito + certificado opcional"]
+ ];
+ var icons=["🧠","👤","📊","🚗","🎓","❤️"];
+ return '<section class="card rounded-3xl p-6"><div class="flex flex-wrap items-end justify-between gap-4"><div><div class="text-xs uppercase tracking-widest text-emerald-700 font-black">FORMAÇÃO PROFISSIONAL</div><h3 class="text-2xl sm:text-3xl font-black mt-1">Cursos ENAT na Rede Neurotrânsito</h3><p class="text-slate-600 mt-2 leading-7 max-w-3xl">As seis formações apresentadas no NeuroDrive agora são destacadas diretamente na rede social.</p></div><div class="px-4 py-3 rounded-2xl bg-emerald-50 text-emerald-800 font-black whitespace-nowrap">6 FORMAÇÕES</div></div><div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4 mt-6">'+courses.map(function(x,i){return '<article class="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm flex flex-col min-h-[270px]"><div class="flex items-start justify-between gap-3"><div class="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center text-xl">'+icons[i]+'</div><span class="text-[10px] uppercase tracking-wider font-black text-sky-700 bg-sky-50 px-2 py-1 rounded-lg">'+esc(x[1])+'</span></div><h4 class="text-lg font-black mt-4 leading-tight">'+esc(x[0])+'</h4><p class="text-slate-600 mt-3 leading-6 text-sm">'+esc(x[2])+'</p><div class="mt-auto pt-5 flex items-end justify-between gap-3"><div class="text-[11px] text-slate-500"><b>'+esc(x[3])+'</b><br>'+esc(x[4])+'</div><a href="https://neurodrive.hsi-doth-pg.com.br" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-[#07111f] text-white text-xs font-black whitespace-nowrap">ACESSAR CURSO</a></div></article>';}).join('')+'</div></section>';
+}
 async function loadCmntData(key){
  var box=document.getElementById('cmntData');if(!box)return;
  var q=null;
  if(key==="research_lab")q=db.from('cmnt_research_projects').select('id,title,abstract,study_type,status,ethics_status,updated_at').neq('status','archived').order('updated_at',{ascending:false}).limit(20);
  else if(key==="researcher")q=db.from('cmnt_researcher_profiles').select('user_id,professional_summary,scientific_bio,research_areas,institutions,researcher_status,verification_status,orcid,lattes_url').order('updated_at',{ascending:false}).limit(20);
  else if(key==="evidence")q=db.from('cmnt_scientific_sources').select('id,title,source_type,authors,journal,publication_year,doi,evidence_level,review_status,url,abstract').neq('review_status','rejected').order('publication_year',{ascending:false}).limit(30);
- else if(key==="academy")q=db.from('enat_courses').select('id,name,code,nature,modality,summary,category,hours,slug,thumbnail_url').eq('active',true).eq('published',true).order('name').limit(20);
+ else if(key==="academy")q=null;
  else if(key==="observatory")q=db.from('cmnt_observatory_indicators').select('id,code,name,description,unit,source_domain,public_level').eq('active',true).order('name');
  else if(key==="events")q=db.from('cmnt_events').select('id,title,description,event_type,starts_at,ends_at,location,online_url,status,published').eq('published',true).order('starts_at',{ascending:true}).limit(30);
  else if(key==="editorial")q=db.from('cmnt_editorial_articles').select('id,title,summary,body,article_type,published_at,slug').eq('status','published').order('published_at',{ascending:false}).limit(20);
@@ -695,10 +707,10 @@ async function loadCmntData(key){
  else if(key==="integrations")q=db.from('cmnt_integration_links').select('id,source_system,source_record_id,target_type,target_record_id,relation_type,metadata,created_at').order('created_at',{ascending:false}).limit(50);
  else if(key==="scientific_ai")q=db.from('cmnt_ai_interactions').select('id,context_type,input_summary,output_summary,source_count,human_review_required,reviewed,created_at').eq('reviewed',true).order('created_at',{ascending:false}).limit(20);
  else return;
+ if(key==="academy"){box.innerHTML=cmntAcademyCourses();return;}
  var r=await q;if(r.error){box.innerHTML='<div class="card rounded-3xl p-5 bg-red-50 text-red-700"><b>Não foi possível carregar este módulo.</b><p class="mt-2 text-sm">'+esc(r.error.message)+'</p></div>';return}
  var rows=r.data||[];
  var html='';
- if(key==="academy")html=rows.map(function(x){return cmntDynamicCard(x.name,x.summary,(x.hours?x.hours+' h · ':'')+(x.category||x.nature||'ENAT'))}).join('');
  else if(key==="researcher")html=rows.map(function(x){return cmntDynamicCard((x.research_areas||[]).slice(0,2).join(' · ')||'Pesquisador ENAT',x.professional_summary||x.scientific_bio,(x.verification_status||'unverified'))}).join('');
  else if(key==="evidence")html=rows.map(function(x){return cmntDynamicCard(x.title,x.abstract,(x.evidence_level||'não classificado')+' · '+(x.publication_year||'s/ano'))}).join('');
  else if(key==="observatory")html=rows.map(function(x){return cmntDynamicCard(x.name,x.description,(x.code||'')+' · '+(x.unit||'índice'))}).join('');
@@ -1004,11 +1016,9 @@ function cmntRenderContent(key){
     '<div class="flex flex-wrap items-center justify-between gap-5">'+
       '<div class="max-w-3xl"><div class="text-xs uppercase tracking-[.2em] text-emerald-300 font-black">SISTEMA PROFISSIONAL PARA INSTRUTORES</div>'+
       '<h3 class="text-2xl sm:text-3xl font-black mt-2">NeuroDrive — Assistente do Instrutor</h3>'+
-      '<p class="mt-3 text-white/80 leading-7">Transforme a formação em gestão profissional: organize alunos, agenda, aulas, HSI-DOTH-P, RPA Único, financeiro e acompanhamento em um único ambiente.</p></div>'+
+      '<p class="mt-3 text-white/80 leading-7">Sistema profissional para gestão da atividade do instrutor, com alunos, agenda, aulas, HSI-DOTH-P, RPA Único, financeiro e acompanhamento da formação.</p></div>'+
       '<a href="https://neurodrive.hsi-doth-pg.com.br" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-white text-[#07111f] font-black shadow-lg">CONHEÇA O NEURODRIVE</a>'+
-    '</div></section>'+
-    '<div id="cmntNeuroDriveCatalog" class="mt-5"><div class="card rounded-3xl p-6 text-slate-400">Carregando cursos NeuroDrive...</div></div>';
-  setTimeout(function(){cmntNeuroDriveCatalog().then(function(markup){var box=document.getElementById("cmntNeuroDriveCatalog");if(box)box.innerHTML=markup||'<div class="card rounded-3xl p-6 text-slate-500">Nenhum curso publicado no momento.</div>';}).catch(function(){var box=document.getElementById("cmntNeuroDriveCatalog");if(box)box.innerHTML='<div class="card rounded-3xl p-6 bg-red-50 text-red-700">Não foi possível carregar o catálogo de cursos.</div>';})},0);
+    '</div></section>';
  }
  if(key!=="nexus12" && key!=="neurodrive")html+=cmntCourse(key);
  if(["research_lab","researcher","evidence","academy","observatory","events","editorial","scientific_communities","institutions","governance","knowledge_base","scientific_ai"].indexOf(key)>=0){
