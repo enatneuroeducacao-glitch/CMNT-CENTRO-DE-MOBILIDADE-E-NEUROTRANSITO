@@ -557,6 +557,17 @@ function cmntCourse(key){
 }
 function cmntMarkLesson(key,i){var p=cmntCourseProgress(key);p["lesson"+i]=true;p.done=Object.keys(p).filter(function(k){return /^lesson\d+$/.test(k)&&p[k]}).length;cmntSaveCourseProgress(key,p);cmntLog(key,"lesson_completed",{lesson:i+1});render()}
 
+CMNT_COURSES.overview={goal:"Compreender a arquitetura do CMNT e como ENAT, HSI-DOTH-P, NEXUS 12, pesquisa, evidências e observatório se conectam.",lessons:[
+ ["Aula 1 — O que é o CMNT","O Centro de Mobilidade e Neurotrânsito organiza uma camada científica para estudar, formar, observar e aplicar conhecimento relacionado ao trânsito e à mobilidade. Ele não substitui a rede social; acrescenta método, contexto e rastreabilidade.","Objetivo: compreender a função do CMNT dentro do ecossistema ENAT."],
+ ["Aula 2 — Diagnóstico, interpretação e intervenção","O ciclo científico parte de uma situação, coleta informações, interpreta com cautela e define intervenções. Diagnóstico não é sentença e interpretação não deve ser confundida com causalidade automática.","Objetivo: separar medição, interpretação e intervenção."],
+ ["Aula 3 — Ciência aplicada","Conhecimento deve sair do documento e chegar à formação, à prática, às políticas e à avaliação de resultados. Toda aplicação precisa reconhecer evidências, limites e contexto.","Objetivo: transformar conhecimento em ação responsável."]
+ ]};
+CMNT_COURSES.hsi={goal:"Estudar o HSI e o HSI-DOTH-P como instrumentos de reflexão e mensuração do fator humano, preservando limites metodológicos e evitando interpretações indevidas.",lessons:[
+ ["Aula 1 — Arquitetura do HSI","O Human Safety Index integra dimensões cognitivas, emocionais, comportamentais, sociais e contextuais para organizar uma leitura do fator humano. A interpretação deve considerar finalidade, instrumento, população e contexto.","Objetivo: compreender o HSI como arquitetura multidimensional."],
+ ["Aula 2 — HSI-DOTH-P","O HSI-DOTH-P trabalha cinco eixos: Decisão, Organização, Tempo, Humanização e Psicocomportamental. O questionário digital registra respostas e calcula um perfil de desenvolvimento; não constitui diagnóstico clínico.","Objetivo: compreender os cinco eixos e sua finalidade."],
+ ["Aula 3 — Interpretação responsável","Uma pontuação é uma medida dentro de um instrumento e em um momento específico. Resultados devem orientar reflexão e desenvolvimento, sem rotular, diagnosticar ou atribuir culpa. Pesquisa formal exige protocolo, consentimento e validação.","Objetivo: interpretar resultados com prudência e responsabilidade."]
+ ]};
+
 function cmntBuildDefaultQuizzes(){
  Object.keys(CMNT_COURSES).forEach(function(key){
   var d=CMNT_COURSES[key];
@@ -582,7 +593,7 @@ function cmntRenderContent(key){
   html+='<div class="grid md:grid-cols-2 gap-4">'+d.blocks.map(function(x){return cmntBlock(x[0],x[1])}).join('')+'</div>';
  }
  if(key==="hsi")html+=cmntHSIQuestionnaire();
- if(key!=="hsi"&&key!=="overview"&&key!=="nexus12")html+=cmntCourse(key);
+ if(key!=="nexus12")html+=cmntCourse(key);
  if(["research_lab","researcher","evidence","academy","observatory","events","editorial","scientific_communities","institutions","governance","knowledge_base","integrations","scientific_ai"].indexOf(key)>=0){
   html+='<div id="cmntData" class="mt-5"><div class="card rounded-3xl p-6 text-slate-400">Conectando este módulo ao banco científico...</div></div>';
   setTimeout(function(){loadCmntData(key)},0);
