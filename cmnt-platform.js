@@ -102,6 +102,13 @@
   if(!window.__cmntNexusClickBound){
     document.addEventListener('click',function(ev){
       var target=ev.target.closest ? ev.target.closest('[data-cmnt-nexus]') : null;
+      var assess=ev.target.closest ? ev.target.closest('[data-cmnt-nexus-assess]') : null;
+      if(assess){
+        ev.preventDefault();
+        var assessCode=assess.getAttribute('data-cmnt-nexus-assess');
+        if(assessCode)window.cmntNexusAssessModule(assessCode);
+        return;
+      }
       if(!target)return;
       ev.preventDefault();
       var code=target.getAttribute('data-cmnt-nexus');
