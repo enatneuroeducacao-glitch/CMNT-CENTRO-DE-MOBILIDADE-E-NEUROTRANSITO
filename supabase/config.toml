@@ -1,2 +1,8 @@
 [functions.cmnt-admin]
 verify_jwt = true
+
+[functions.manage-admin-users]
+verify_jwt = true
+
+[functions.cmnt-complete-registration]
+verify_jwt = true
