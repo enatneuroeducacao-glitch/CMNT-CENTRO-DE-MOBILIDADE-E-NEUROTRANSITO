@@ -35,6 +35,6 @@ create policy social_messages_recipient_read
   using (auth.uid() = recipient_id)
   with check (auth.uid() = recipient_id);
 
-revoke all on table public.social_messages from anon, authenticated;
+revoke all on table public.social_messages from public, anon, authenticated;
 grant select, insert on table public.social_messages to authenticated;
 grant update (read_at) on table public.social_messages to authenticated;
