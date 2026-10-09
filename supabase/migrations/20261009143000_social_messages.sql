@@ -15,12 +15,23 @@ create index if not exists idx_social_messages_sender_created
 create index if not exists idx_social_messages_recipient_created
   on public.social_messages(recipient_id, created_at desc);
 
-drop policy if exists social_messages_participant_select on public.social_messages;
+-- Remove any older permissive policies so they cannot broaden access.
+do $
+declare p record;
+begin
+  for p in
+    select policyname
+    from pg_policies
+    where schemaname = 'public' and tablename = 'social_messages'
+  loop
+    execute format('drop policy if exists %I on public.social_messages', p.policyname);
+  end loop;
+end $;
+
 create policy social_messages_participant_select
   on public.social_messages for select to authenticated
   using (auth.uid() = sender_id or auth.uid() = recipient_id);
 
-drop policy if exists social_messages_sender_insert on public.social_messages;
 create policy social_messages_sender_insert
   on public.social_messages for insert to authenticated
   with check (
@@ -29,7 +40,6 @@ create policy social_messages_sender_insert
     and char_length(btrim(content)) between 1 and 5000
   );
 
-drop policy if exists social_messages_recipient_read on public.social_messages;
 create policy social_messages_recipient_read
   on public.social_messages for update to authenticated
   using (auth.uid() = recipient_id)
