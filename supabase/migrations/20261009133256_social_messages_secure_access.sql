@@ -16,7 +16,7 @@ create index if not exists idx_social_messages_recipient_created
   on public.social_messages(recipient_id, created_at desc);
 
 -- Remove any older permissive policies so they cannot broaden access.
-do $
+do $$
 declare p record;
 begin
   for p in
@@ -26,7 +26,7 @@ begin
   loop
     execute format('drop policy if exists %I on public.social_messages', p.policyname);
   end loop;
-end $;
+end $$;
 
 create policy social_messages_participant_select
   on public.social_messages for select to authenticated
