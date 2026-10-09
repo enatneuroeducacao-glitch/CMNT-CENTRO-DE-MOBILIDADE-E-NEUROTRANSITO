@@ -1,7 +1,13 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization,apikey,content-type","Access-Control-Allow-Methods":"POST,OPTIONS"};
 const json=(b:any,s=200)=>new Response(JSON.stringify(b),{status:s,headers:{...cors,"Content-Type":"application/json"}});
-const url=Deno.env.get("SUPABASE_URL")!, pub=JSON.parse(Deno.env.get("SUPABASE_PUBLISHABLE_KEYS")||"{}").default||Deno.env.get("SUPABASE_ANON_KEY")!, sec=JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS")||"{}").default||Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const url=Deno.env.get("SUPABASE_URL")!;
+function resolveKey(modernName:string,legacyName:string){
+ const raw=Deno.env.get(modernName);
+ if(raw){try{const parsed=JSON.parse(raw);if(parsed&&typeof parsed==="object"&&parsed.default)return parsed.default}catch{}return raw}
+ const legacy=Deno.env.get(legacyName);if(!legacy)throw new Error("Configuração ausente: "+legacyName);return legacy;
+}
+const pub=resolveKey("SUPABASE_PUBLISHABLE_KEYS","SUPABASE_ANON_KEY"), sec=resolveKey("SUPABASE_SECRET_KEYS","SUPABASE_SERVICE_ROLE_KEY");
 const authClient=createClient(url,pub,{auth:{persistSession:false,autoRefreshToken:false}}), admin=createClient(url,sec,{auth:{persistSession:false,autoRefreshToken:false}});
 async function caller(req:Request){const h=req.headers.get("Authorization")||"";if(!h.startsWith("Bearer "))return null;const {data}=await authClient.auth.getUser(h.slice(7));return data.user||null}
 async function isAdmin(u:any){if(!u)return null;const {data}=await admin.from("cmnt_admin_users").select("*").eq("user_id",u.id).maybeSingle();return data?.active?data:null}

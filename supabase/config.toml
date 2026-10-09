@@ -1,0 +1,2 @@
+[functions.cmnt-admin]
+verify_jwt = true
