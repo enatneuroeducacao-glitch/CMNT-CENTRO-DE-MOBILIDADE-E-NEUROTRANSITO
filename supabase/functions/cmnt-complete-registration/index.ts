@@ -98,7 +98,7 @@ Deno.serve(async (req: Request) => {
   const now = new Date().toISOString();
   const existingResult = await admin
     .from("social_identity")
-    .select("user_id,birth_date,credential_type,credential_number,lgpd_consent,community_guidelines_accepted,consent_at,guidelines_accepted_at")
+    .select("user_id,birth_date,credential_type,credential_number,lgpd_consent,community_guidelines_accepted,consent_at,guidelines_accepted_at,privacy_policy_version")
     .eq("user_id", user.id)
     .maybeSingle();
   if (existingResult.error) {
@@ -115,7 +115,8 @@ Deno.serve(async (req: Request) => {
     existing.lgpd_consent === true &&
     existing.community_guidelines_accepted === true &&
     existing.consent_at &&
-    existing.guidelines_accepted_at
+    existing.guidelines_accepted_at &&
+    existing.privacy_policy_version === privacyPolicyVersion
   );
 
   if (!identityComplete) {
