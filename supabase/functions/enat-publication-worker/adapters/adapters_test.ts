@@ -63,6 +63,26 @@ Deno.test("adaptadores oficiais usam respostas simuladas e nunca dependem de red
     });
     if (noMedia.success || noMedia.retryable) throw new Error("Instagram without media must fail closed");
 
+    const beforeInProgress = calls.length;
+    nextResponses = [
+      { status: 200, body: { id: "container_processing" } },
+      { status: 200, body: { status_code: "IN_PROGRESS", status: "In Progress" } },
+    ];
+    const igInProgress = await publishInstagram(input, { accessToken: "test-token", apiVersion: "v99.0", instagramUserId: "456" });
+    if (igInProgress.success || igInProgress.retryable) throw new Error("IN_PROGRESS beyond bounded polling must not publish");
+    const inProgressCalls = calls.slice(beforeInProgress);
+    if (inProgressCalls.some((call) => call.url.includes("/media_publish"))) throw new Error("Instagram must not publish a container still processing");
+
+    const beforeStatusTimeout = calls.length;
+    nextResponses = [
+      { status: 200, body: { id: "container_timeout" } },
+      { status: 200, body: { error: { message: "request timed out" } } },
+    ];
+    const igTimeout = await publishInstagram(input, { accessToken: "test-token", apiVersion: "v99.0", instagramUserId: "456" });
+    if (igTimeout.success || igTimeout.retryable) throw new Error("Instagram status timeout/invalid status must fail closed");
+    const timeoutCalls = calls.slice(beforeStatusTimeout);
+    if (timeoutCalls.some((call) => call.url.includes("/media_publish"))) throw new Error("Instagram must not publish after status timeout");
+
     const beforeErrorContainer = calls.length;
     nextResponses = [
       { status: 200, body: { id: "container_error" } },
