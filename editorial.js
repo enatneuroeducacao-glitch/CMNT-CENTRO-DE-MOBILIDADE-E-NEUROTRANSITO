@@ -20,7 +20,7 @@ function calendar(){
  const label=document.getElementById('enatEdMonthLabel');if(label)label.textContent=calendarMonth.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
  const first=new Date(y,m,1),offset=(first.getDay()+6)%7,days=new Date(y,m+1,0).getDate();
  const names=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
- let html='<div class="grid grid-cols-7 gap-1">'+names.map(n=>'<div class="text-center text-xs font-black text-slate-500 py-2">'+n+'</div>').join('');
+ let html='<div class="grid gap-1" style="grid-template-columns:repeat(7,minmax(0,1fr))">'+names.map(n=>'<div class="text-center text-xs font-black text-slate-500 py-2">'+n+'</div>').join('');
  for(let i=0;i<offset;i++)html+='<div class="min-h-20 rounded-lg bg-slate-50 border border-slate-100 p-1"></div>';
  for(let d=1;d<=days;d++){
   const key=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
