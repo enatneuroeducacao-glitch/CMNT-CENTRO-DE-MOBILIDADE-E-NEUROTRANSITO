@@ -25,8 +25,8 @@ jobs:
           from pathlib import Path
           import re
           html = Path("index.html").read_text(encoding="utf-8")
-          scripts = re.findall(r"<script(?:\\s[^>]*)?>(.*?)</script>", html, flags=re.S|re.I)
-          Path("/tmp/cmnt-index-scripts.js").write_text("\\n\\n".join(scripts), encoding="utf-8")
+          scripts = re.findall(r"<script(?:\s[^>]*)?>(.*?)</script>", html, flags=re.S|re.I)
+          Path("/tmp/cmnt-index-scripts.js").write_text("\n\n".join(scripts), encoding="utf-8")
           PY
           node --check /tmp/cmnt-index-scripts.js
 
