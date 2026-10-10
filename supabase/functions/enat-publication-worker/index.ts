@@ -1,3 +1,4 @@
+import { evaluateWorkerGate } from "./gate.ts";
 import { publishFacebook, publishInstagram } from "./adapters/meta.ts";
 import { publishLinkedIn } from "./adapters/linkedin.ts";
 import { publishX } from "./adapters/x.ts";
@@ -88,15 +89,16 @@ async function publish(job: Job, editorial: Record<string, unknown>): Promise<Pu
 }
 
 Deno.serve(async (req: Request) => {
+  const gate = evaluateWorkerGate(
+    req.method,
+    req.headers.get("x-cron-secret"),
+    env("ENAT_WORKER_CRON_SECRET"),
+    env("ENAT_SOCIAL_PUBLISHING_ENABLED"),
+  );
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-  if (req.method !== "POST") return json(405, { error: "method_not_allowed" });
-
-  const expected = env("ENAT_WORKER_CRON_SECRET");
-  const provided = req.headers.get("x-cron-secret");
-  if (!expected || !provided || provided !== expected) return json(401, { error: "unauthorized" });
-
-  if (env("ENAT_SOCIAL_PUBLISHING_ENABLED") !== "true") {
-    return json(200, { status: "safe_mode", claimed: 0, message: "Publicação externa desativada pela feature flag." });
+  if (!gate.allowed) {
+    if (gate.code === "safe_mode") return json(200, { status: "safe_mode", claimed: 0, message: "Publicação externa desativada pela feature flag." });
+    return json(gate.status, { error: gate.code });
   }
 
   const required = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"];
