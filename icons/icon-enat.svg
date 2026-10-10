@@ -1,9 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-<rect width="512" height="512" rx="88" fill="#07111f"/>
-<circle cx="256" cy="256" r="208" fill="#0b2135" stroke="#16b86a" stroke-width="14"/>
-<circle cx="256" cy="256" r="180" fill="none" stroke="#f2c66d" stroke-width="5"/>
-<path d="M256 100 354 145 354 260 Q345 349 256 396 Q167 349 158 260 L158 145Z" fill="#123f63" stroke="#f2c66d" stroke-width="8" stroke-linejoin="round"/>
-<path d="M191 228H321M256 160V307" stroke="#16b86a" stroke-width="18" stroke-linecap="round"/>
-<path d="M216 193 296 273M296 193 216 273" stroke="#fff" stroke-width="14" stroke-linecap="round"/>
-<text x="256" y="452" text-anchor="middle" font-family="Arial,sans-serif" font-size="42" font-weight="900" letter-spacing="4" fill="#fff">ENAT</text>
+<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#07111f"/><stop offset="1" stop-color="#087dc1"/></linearGradient><linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff2a1"/><stop offset=".5" stop-color="#ffc52f"/><stop offset="1" stop-color="#e88700"/></linearGradient><linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7ceaff"/><stop offset=".5" stop-color="#1599ed"/><stop offset="1" stop-color="#0648a7"/></linearGradient></defs>
+<rect width="512" height="512" rx="92" fill="url(#sky)"/>
+<circle cx="256" cy="220" r="194" fill="#07111f" stroke="url(#blue)" stroke-width="12"/>
+<path d="M256 45 A175 175 0 0 0 81 220 L256 220Z" fill="#06182d" stroke="#168ef0" stroke-width="5"/>
+<path d="M256 45 A175 175 0 0 1 431 220 L256 220Z" fill="#f7a91a" stroke="#ffe08a" stroke-width="5"/>
+<path d="M256 68V224" stroke="#fff" stroke-width="5" opacity=".9"/>
+<path d="M235 94c-29-21-60 8-46 31-24 15-11 48 9 48 0 26 36 33 58 7V98c-6-8-13-9-21-4z" fill="url(#blue)" stroke="#fff" stroke-width="4"/>
+<path d="M277 94c29-21 60 8 46 31 24 15 11 48-9 48 0 26-36 33-58 7V98c6-8 13-9 21-4z" fill="url(#gold)" stroke="#fff" stroke-width="4"/>
+<path d="M248 213 176 367H336L264 213Z" fill="#18364f" stroke="#7eeaff" stroke-width="5"/>
+<path d="M256 232V345" stroke="#fff" stroke-width="8" stroke-dasharray="18 16"/>
+<path d="M60 372 Q256 300 452 372V426Q256 354 60 426Z" fill="#138ed5" stroke="#73e4ff" stroke-width="5"/>
+<path d="M256 357 221 426H291Z" fill="#07111f"/><path d="M256 374V418" stroke="#fff" stroke-width="5" stroke-dasharray="8 8"/>
+<text x="256" y="333" text-anchor="middle" font-family="Arial,sans-serif" font-size="88" font-weight="900" letter-spacing="-3" fill="#07111f" stroke="url(#gold)" stroke-width="5" paint-order="stroke">ENAT</text>
+<text x="256" y="466" text-anchor="middle" font-family="Arial,sans-serif" font-size="26" font-weight="900" letter-spacing="4" fill="#fff">NEUROTRÂNSITO</text>
 </svg>
