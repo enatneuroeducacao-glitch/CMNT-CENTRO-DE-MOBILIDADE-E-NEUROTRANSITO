@@ -1,0 +1,25 @@
+import { requestJson, safeFailure, type AdapterConfig, type PublishInput, type PublishResult } from "./types.ts";
+export async function publishFacebook(input: PublishInput, config: AdapterConfig & { pageId: string }): Promise<PublishResult> {
+  if (!input.body.trim()) return { success: false, retryable: false, safeError: "Texto vazio." };
+  const version = config.apiVersion || Deno.env.get("META_GRAPH_API_VERSION");
+  if (!version || !config.pageId || !config.accessToken) return { success: false, retryable: false, safeError: "Meta não configurada." };
+  try {
+    const body = new URLSearchParams({ message: input.body, access_token: config.accessToken });
+    if (input.source_url) body.set("link", input.source_url);
+    const { response, data } = await requestJson(`https://graph.facebook.com/${version}/${encodeURIComponent(config.pageId)}/feed`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
+    if (!response.ok || typeof data.id !== "string") return safeFailure(response.status, "Meta API recusou publicação.");
+    return { success: true, remotePostId: data.id };
+  } catch { return { success: false, retryable: true, safeError: "Falha de rede ao chamar Meta; verificar reconciliação antes de repetir." }; }
+}
+export async function publishInstagram(input: PublishInput, config: AdapterConfig & { instagramUserId: string }): Promise<PublishResult> {
+  const version = config.apiVersion || Deno.env.get("META_GRAPH_API_VERSION");
+  if (!version || !config.instagramUserId || !config.accessToken) return { success: false, retryable: false, safeError: "Instagram não configurado." };
+  if (!input.mediaUrl || !/^https:\/\//i.test(input.mediaUrl)) return { success: false, retryable: false, safeError: "Instagram exige URL HTTPS pública de mídia nesta versão do adaptador." };
+  try {
+    const create = await requestJson(`https://graph.facebook.com/${version}/${encodeURIComponent(config.instagramUserId)}/media`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ image_url: input.mediaUrl, caption: input.body, access_token: config.accessToken }) });
+    if (!create.response.ok || typeof create.data.id !== "string") return safeFailure(create.response.status, "Meta não criou o container de mídia.");
+    const publish = await requestJson(`https://graph.facebook.com/${version}/${encodeURIComponent(config.instagramUserId)}/media_publish`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ creation_id: create.data.id, access_token: config.accessToken }) });
+    if (!publish.response.ok || typeof publish.data.id !== "string") return safeFailure(publish.response.status, "Meta não confirmou publicação do container.");
+    return { success: true, remotePostId: publish.data.id };
+  } catch { return { success: false, retryable: false, safeError: "Falha ou timeout na publicação Instagram; reconciliar container antes de repetir." }; }
+}
