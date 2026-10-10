@@ -90,7 +90,8 @@ create unique index if not exists enat_publication_idempotency_key_idx
   on public.enat_publication_jobs (idempotency_key)
   where status in ('queued','publishing','published');
 
-create or replace function public.enat_claim_publication_jobs(p_limit integer default 10)
+drop function if exists public.enat_claim_publication_jobs(integer);
+create or replace function public.enat_claim_publication_jobs(p_limit integer default 10, p_channels text[] default null)
 returns setof public.enat_publication_jobs
 language plpgsql
 security definer
@@ -108,6 +109,7 @@ begin
     where j.status = 'queued'
       and j.scheduled_at <= now()
       and e.status = 'approved'
+      and (p_channels is null or j.channel = any(p_channels))
     order by j.scheduled_at, j.created_at
     for update skip locked
     limit greatest(1, least(coalesce(p_limit, 10), 50))
@@ -123,8 +125,8 @@ begin
   returning j.*;
 end;
 $$;
-revoke all on function public.enat_claim_publication_jobs(integer) from public, anon, authenticated;
-grant execute on function public.enat_claim_publication_jobs(integer) to service_role;
+revoke all on function public.enat_claim_publication_jobs(integer, text[]) from public, anon, authenticated;
+grant execute on function public.enat_claim_publication_jobs(integer, text[]) to service_role;
 
 -- Finalize only a job held by the caller's current claim token.
 -- Network ambiguity is handled as failed/manual reconciliation; never auto-requeue here.
