@@ -70,6 +70,7 @@ select throws_ok(
   $q$insert into public.enat_editorial_items (title, body, category, created_by, updated_by)
     values ('Tentativa não autorizada', 'Conteúdo inválido', 'Pesquisa e Evidências', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002')$q$,
   '42501',
+  null,
   'Non-admin insert is rejected by RLS'
 );
 reset role;
