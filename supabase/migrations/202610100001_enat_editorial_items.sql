@@ -15,7 +15,7 @@ create table if not exists public.enat_editorial_items (
   updated_at timestamptz not null default now(),
   constraint enat_editorial_title_nonempty check (length(trim(title)) > 0),
   constraint enat_editorial_body_nonempty check (length(trim(body)) > 0),
-  constraint enat_editorial_source_https check (source_url is null or source_url ~ '^https://')
+  constraint enat_editorial_source_https check (source_url is null or source_url ~* '^https://')
 );
 create index if not exists enat_editorial_status_updated_idx on public.enat_editorial_items (status, updated_at desc);
 create index if not exists enat_editorial_date_idx on public.enat_editorial_items (editorial_date);
