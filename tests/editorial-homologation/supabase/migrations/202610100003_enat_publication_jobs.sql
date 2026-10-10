@@ -49,4 +49,36 @@ end;
 $$;
 drop trigger if exists enat_publication_validate_job on public.enat_publication_jobs;
 create trigger enat_publication_validate_job before insert or update on public.enat_publication_jobs for each row execute function public.enat_publication_validate_job();
+alter table public.enat_publication_jobs
+  add column if not exists claimed_at timestamptz,
+  add column if not exists claim_token uuid,
+  add column if not exists idempotency_key text generated always as (editorial_item_id::text || ':' || channel) stored;
+create unique index if not exists enat_publication_idempotency_key_idx
+  on public.enat_publication_jobs (idempotency_key)
+  where status in ('queued','publishing','published');
+create or replace function public.enat_claim_publication_jobs(p_limit integer default 10)
+returns setof public.enat_publication_jobs
+language plpgsql security definer set search_path = ''
+as $
+begin
+  if coalesce(auth.role(), '') <> 'service_role' then
+    raise exception 'Service role required' using errcode = '42501';
+  end if;
+  return query
+  with due as (
+    select j.id from public.enat_publication_jobs j
+    where j.status = 'queued' and j.scheduled_at <= now()
+    order by j.scheduled_at, j.created_at
+    for update skip locked
+    limit greatest(1, least(coalesce(p_limit, 10), 50))
+  )
+  update public.enat_publication_jobs j
+  set status = 'publishing', attempt_count = j.attempt_count + 1,
+      claimed_at = now(), claim_token = gen_random_uuid(), updated_at = now()
+  from due where j.id = due.id returning j.*;
+end;
+$;
+revoke all on function public.enat_claim_publication_jobs(integer) from public, anon, authenticated;
+grant execute on function public.enat_claim_publication_jobs(integer) to service_role;
+
 revoke all on function public.enat_publication_validate_job() from public, anon, authenticated;
