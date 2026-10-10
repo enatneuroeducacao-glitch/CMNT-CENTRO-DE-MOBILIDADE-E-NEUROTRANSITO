@@ -36,7 +36,7 @@ jobs:
         with:
           version: latest
       - name: Start isolated local Supabase stack
-        run: supabase start -x studio,edge-runtime,logflare,vector,imgproxy,inbucket
+        run: supabase start -x gotrue,realtime,storage-api,imgproxy,kong,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,mailpit,supavisor
       - name: Apply repository migrations to local database
         run: supabase db reset --local
       - name: Run pgTAP database tests
