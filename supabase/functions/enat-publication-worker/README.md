@@ -33,4 +33,4 @@ Somente canais com credenciais mínimas completas são reivindicados. Para Insta
 - Antes de reivindicar novos jobs, o worker encerra jobs presos em `publishing` há pelo menos 15 minutos como `failed`, limpa o token de claim e exige reconciliação manual; isso não reenfileira nem repete publicações. A recuperação segura e seus testes pgTAP passaram no CI #319.
 - Não há tokens provisionados neste repositório e nenhum envio real foi executado.
 
-CI #323 aprovado para sintaxe, testes do worker/adaptadores e testes pgTAP isolados. Antes de ativar, revisar as permissões oficiais de cada app e realizar smoke tests com contas de homologação autorizadas.
+CI #329 aprovado para sintaxe, type-check, testes simulados do worker/adaptadores (incluindo HTTP 429 ao consultar estado do container Instagram) e testes pgTAP isolados. Esse resultado não comprova publicação real. Antes de ativar, revisar as permissões oficiais de cada app e realizar smoke tests com contas de homologação autorizadas.
