@@ -1,4 +1,7 @@
 name: CMNT JS Syntax Check
+concurrency:
+  group: enat-editorial-phase1-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 on:
   pull_request:
     branches: ["feature/cmnt-neurocientifico"]
