@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(8);
+select plan(9);
 select has_table('public','enat_publication_jobs','Publication job queue exists');
 select ok((select relrowsecurity from pg_class where oid='public.enat_publication_jobs'::regclass),'RLS is enabled on publication jobs');
 select ok(exists(select 1 from pg_policies where schemaname='public' and tablename='enat_publication_jobs' and policyname='enat_publication_admin_select'),'Admin-only read policy exists');
@@ -34,6 +34,16 @@ select throws_ok(
  '23505', null,
  'Duplicate active item/channel publication is blocked'
 );
+reset role;
+-- A scheduled job whose editorial content was subsequently unapproved must never be claimed.
+insert into public.enat_editorial_items (id,title,body,category,status,created_by,updated_by)
+values ('00000000-0000-0000-0000-000000000113','Conteúdo revogado','Não deve ser processado','Pesquisa e Evidências','approved','00000000-0000-0000-0000-000000000011','00000000-0000-0000-0000-000000000011');
+insert into public.enat_publication_jobs (editorial_item_id,channel,scheduled_at,created_by,updated_by)
+values ('00000000-0000-0000-0000-000000000113','facebook',now()-interval '1 minute','00000000-0000-0000-0000-000000000011','00000000-0000-0000-0000-000000000011');
+update public.enat_editorial_items set status='draft' where id='00000000-0000-0000-0000-000000000113';
+set local role service_role;
+set local request.jwt.claims = '{"role":"service_role"}';
+select is((select count(*)::integer from public.enat_claim_publication_jobs(10)),0,'Unapproved editorial content is never claimed by worker');
 reset role;
 select * from finish();
 rollback;
