@@ -51,7 +51,7 @@ function showScreen(view){
 if(nav)nav.addEventListener('click',ev=>{const button=ev.target.closest('button[data-view]');if(button)showScreen(button.dataset.view)});
 showScreen('editorial');
 
-if(!document.getElementById('supabaseSignOut')){const b=document.createElement('button');b.id='supabaseSignOut';b.className='btn';b.textContent='Sair';document.querySelector('.top').appendChild(b);b.onclick=async()=>{await db.auth.signOut();user=null;records=[];authScreen('Sessão encerrada. Entre novamente com sua conta ENAT autorizada.')}}}
+if(!document.getElementById('supabaseSignOut')){const b=document.createElement('button');b.id='supabaseSignOut';b.className='btn';b.textContent='Sair';document.querySelector('.top').appendChild(b);b.onclick=async()=>{await db.auth.signOut();user=null;records=[];authScreen('Sessão encerrada. Entre novamente com sua conta ENAT autorizada.')}}
 try{bind()}catch(e){console.error('Falha ao inicializar controles do painel',e);msg('Falha ao inicializar os controles: '+(e.message||'erro'));}init();
 })();
 </script>
