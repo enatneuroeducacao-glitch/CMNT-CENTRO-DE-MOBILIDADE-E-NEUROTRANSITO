@@ -1,6 +1,6 @@
-/* Neurotrânsito PWA — cache apenas do shell; nunca intercepta Supabase/API. */
+/* Neurotrânsito PWA — fallback offline explícito; não armazena dados do usuário. */
 const CACHE_NAME = "neurotransito-shell-v1";
-const APP_SHELL = ["/offline.html", "/icons/icon-enat.svg"];
+const APP_SHELL = ["/offline.html", "/icons/icon-enat.svg", "/icons/icon-enat-192.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
@@ -22,24 +22,19 @@ self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
   const url = new URL(request.url);
+  // Nunca intercepta CDNs, Supabase, autenticação ou endpoints externos.
   if (url.origin !== self.location.origin) return;
   if (request.mode === "navigate") {
     event.respondWith((async () => {
       try {
-        const response = await fetch(request);
-        if (response && response.ok) {
-          const cache = await caches.open(CACHE_NAME);
-          await cache.put("/", response.clone());
-        }
-        return response;
+        return await fetch(request);
       } catch (_) {
         const cache = await caches.open(CACHE_NAME);
-        return (await cache.match("/")) || (await cache.match("/offline.html"));
+        return (await cache.match("/offline.html"));
       }
     })());
     return;
   }
-  // Cache somente o ícone e a página offline explicitamente listados.
   if (APP_SHELL.includes(url.pathname)) {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
