@@ -73,6 +73,16 @@ Deno.test("adaptadores oficiais usam respostas simuladas e nunca dependem de red
     const inProgressCalls = calls.slice(beforeInProgress);
     if (inProgressCalls.some((call) => call.url.includes("/media_publish"))) throw new Error("Instagram must not publish a container still processing");
 
+    const beforeRateLimitStatus = calls.length;
+    nextResponses = [
+      { status: 200, body: { id: "container_rate_limited" } },
+      { status: 429, body: { error: { message: "rate limited" } } },
+    ];
+    const igStatusRateLimit = await publishInstagram(input, { accessToken: "test-token", apiVersion: "v99.0", instagramUserId: "456" });
+    if (igStatusRateLimit.success || igStatusRateLimit.retryable) throw new Error("Instagram status 429 must not auto-repeat the publication attempt");
+    const rateLimitCalls = calls.slice(beforeRateLimitStatus);
+    if (rateLimitCalls.some((call) => call.url.includes("/media_publish"))) throw new Error("Instagram must not publish after rate-limited status query");
+
     const beforeStatusTimeout = calls.length;
     nextResponses = [
       { status: 200, body: { id: "container_timeout" } },
