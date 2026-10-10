@@ -29,7 +29,7 @@ Somente canais com credenciais mínimas completas são reivindicados. Para Insta
 
 ## Limitações que bloqueiam produção
 - Os testes atuais usam respostas simuladas; não provam permissões reais, elegibilidade de conta ou publicação real.
-- O adaptador do Instagram ainda precisa consultar o estado do container de mídia antes de chamar/confirmar `media_publish`.
+- O adaptador do Instagram agora consulta o estado do container antes de `media_publish`, com espera limitada a 60 segundos; a integração ainda precisa de homologação real autorizada.
 - A recuperação automática de jobs presos em `publishing` após queda do worker ainda precisa ser implementada e testada.
 - Não há tokens provisionados neste repositório e nenhum envio real foi executado.
 
