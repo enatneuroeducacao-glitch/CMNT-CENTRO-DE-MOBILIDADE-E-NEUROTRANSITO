@@ -25,10 +25,21 @@ jobs:
           from pathlib import Path
           import re
           html = Path("index.html").read_text(encoding="utf-8")
-          scripts = re.findall(r"<script(?:\s[^>]*)?>(.*?)</script>", html, flags=re.S|re.I)
-          Path("/tmp/cmnt-index-scripts.js").write_text("\n\n".join(scripts), encoding="utf-8")
+          scripts = re.findall(r"<script(?:\\s[^>]*)?>(.*?)</script>", html, flags=re.S|re.I)
+          Path("/tmp/cmnt-index-scripts.js").write_text("\\n\\n".join(scripts), encoding="utf-8")
           PY
           node --check /tmp/cmnt-index-scripts.js
+
+  adapter-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Test social adapters with mocked provider responses
+        run: deno test --allow-env=META_GRAPH_API_VERSION,LINKEDIN_API_VERSION supabase/functions/enat-publication-worker/adapters/adapters_test.ts
 
   database-tests:
     runs-on: ubuntu-latest
