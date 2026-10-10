@@ -39,9 +39,9 @@ jobs:
         with:
           deno-version: v2.x
       - name: Type-check the server worker and adapters
-        run: deno check supabase/functions/enat-publication-worker/index.ts supabase/functions/enat-publication-worker/adapters/adapters_test.ts
+        run: deno check supabase/functions/enat-publication-worker/index.ts supabase/functions/enat-publication-worker/gate_test.ts supabase/functions/enat-publication-worker/adapters/adapters_test.ts
       - name: Test social adapters with mocked provider responses
-        run: deno test --allow-env=META_GRAPH_API_VERSION,LINKEDIN_API_VERSION supabase/functions/enat-publication-worker/adapters/adapters_test.ts
+        run: deno test --allow-env=META_GRAPH_API_VERSION,LINKEDIN_API_VERSION supabase/functions/enat-publication-worker/gate_test.ts supabase/functions/enat-publication-worker/adapters/adapters_test.ts
 
   database-tests:
     runs-on: ubuntu-latest
