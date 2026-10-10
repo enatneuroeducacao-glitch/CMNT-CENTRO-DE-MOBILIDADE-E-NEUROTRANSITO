@@ -30,7 +30,7 @@ Somente canais com credenciais mínimas completas são reivindicados. Para Insta
 ## Limitações que bloqueiam produção
 - Os testes atuais usam respostas simuladas; não provam permissões reais, elegibilidade de conta ou publicação real.
 - O adaptador do Instagram agora consulta o estado do container antes de `media_publish`, com espera limitada a 60 segundos; a integração ainda precisa de homologação real autorizada.
-- A recuperação automática de jobs presos em `publishing` após queda do worker ainda precisa ser implementada e testada.
+- Antes de reivindicar novos jobs, o worker encerra jobs presos em `publishing` há pelo menos 15 minutos como `failed`, limpa o token de claim e exige reconciliação manual; isso não reenfileira nem repete publicações. A RPC e o fluxo precisam passar no CI atualizado.
 - Não há tokens provisionados neste repositório e nenhum envio real foi executado.
 
 Antes de ativar, executar o CI atualizado, revisar as permissões oficiais de cada app e realizar smoke tests com contas de homologação autorizadas.
