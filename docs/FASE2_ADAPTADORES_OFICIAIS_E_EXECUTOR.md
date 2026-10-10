@@ -1,7 +1,10 @@
 # Adaptadores oficiais de publicação ENAT — implementação segura
 
-## Estado
-Os adaptadores e o executor real ainda não estão implementados. Esta especificação é o contrato de implementação; não habilita envios.
+## Estado atual
+- Adaptadores iniciais de Meta (Facebook/Instagram), LinkedIn e X implementados e testados com respostas simuladas.
+- Worker conectado à RPC de claim por canal configurado, revalidação do conteúdo aprovado e RPC de finalização protegida por `claim_token`.
+- A feature flag permanece obrigatória (`ENAT_SOCIAL_PUBLISHING_ENABLED=true`) e não foi ativada neste trabalho.
+- Nenhuma credencial real foi configurada e nenhuma publicação externa real foi executada. CI aprovado para adaptadores simulados; alterações mais recentes aguardam novo CI.
 
 ## Canais
 - Meta Graph API: Instagram profissional elegível e Facebook Page. Requer configuração de app Meta, permissões aprovadas e tokens adequados. Instagram usa criação de container e posterior publicação; consultar o estado do container antes de confirmar sucesso.
