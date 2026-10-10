@@ -1,0 +1,68 @@
+import { publishFacebook, publishInstagram } from "./meta.ts";
+import { publishLinkedIn } from "./linkedin.ts";
+import { publishX } from "./x.ts";
+import type { PublishInput } from "./types.ts";
+
+const input: PublishInput = {
+  title: "Teste de homologação",
+  body: "Publicação de teste — não enviar para redes reais.",
+  source_url: "https://example.com/teste",
+  authorUrn: "urn:li:organization:123",
+  pageId: "123",
+  instagramUserId: "456",
+  mediaUrl: "https://example.com/teste.jpg",
+};
+
+Deno.test("adaptadores oficiais usam respostas simuladas e nunca dependem de rede real", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: Array<{ url: string; init?: RequestInit }> = [];
+  let nextResponses: Array<{ status: number; body: unknown; headers?: Record<string, string> }> = [];
+
+  globalThis.fetch = (async (inputUrl: string | URL | Request, init?: RequestInit) => {
+    const url = String(inputUrl);
+    calls.push({ url, init });
+    const next = nextResponses.shift() ?? { status: 500, body: { error: "unexpected mocked request" } };
+    return new Response(JSON.stringify(next.body), {
+      status: next.status,
+      headers: { "Content-Type": "application/json", ...(next.headers ?? {}) },
+    });
+  }) as typeof fetch;
+
+  try {
+    nextResponses = [{ status: 200, body: { id: "page_post_1" } }];
+    const fb = await publishFacebook(input, { accessToken: "test-token", apiVersion: "v99.0", pageId: "123" });
+    if (!fb.success || fb.remotePostId !== "page_post_1") throw new Error("Facebook success response not parsed");
+    if (!calls.at(-1)?.url.includes("/v99.0/123/feed")) throw new Error("Facebook endpoint mismatch");
+
+    nextResponses = [{ status: 200, body: { id: "container_1" } }, { status: 200, body: { id: "ig_post_1" } }];
+    const ig = await publishInstagram(input, { accessToken: "test-token", apiVersion: "v99.0", instagramUserId: "456" });
+    if (!ig.success || ig.remotePostId !== "ig_post_1") throw new Error("Instagram publish response not parsed");
+    if (!calls.at(-2)?.url.includes("/456/media") || !calls.at(-1)?.url.includes("/456/media_publish")) {
+      throw new Error("Instagram container flow mismatch");
+    }
+
+    nextResponses = [{ status: 201, body: {}, headers: { "x-restli-id": "urn:li:share:1" } }];
+    const li = await publishLinkedIn(input, { accessToken: "test-token", apiVersion: "202610", authorUrn: "urn:li:organization:123" });
+    if (!li.success || li.remotePostId !== "urn:li:share:1") throw new Error("LinkedIn response header not parsed");
+    const liCall = calls.at(-1);
+    if (liCall?.url !== "https://api.linkedin.com/rest/posts" || new Headers(liCall.init?.headers).get("LinkedIn-Version") !== "202610") {
+      throw new Error("LinkedIn endpoint/version headers mismatch");
+    }
+
+    nextResponses = [{ status: 201, body: { data: { id: "x_post_1" } } }];
+    const x = await publishX(input, { accessToken: "user-context-test-token" });
+    if (!x.success || x.remotePostId !== "x_post_1") throw new Error("X response not parsed");
+    if (calls.at(-1)?.url !== "https://api.x.com/2/tweets") throw new Error("X endpoint mismatch");
+
+    nextResponses = [{ status: 429, body: { error: "rate limited" } }];
+    const rateLimited = await publishX(input, { accessToken: "test-token" });
+    if (rateLimited.success || !rateLimited.retryable) throw new Error("HTTP 429 should be marked retryable");
+
+    const noMedia = await publishInstagram({ ...input, mediaUrl: undefined }, {
+      accessToken: "test-token", apiVersion: "v99.0", instagramUserId: "456",
+    });
+    if (noMedia.success || noMedia.retryable) throw new Error("Instagram without media must fail closed");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
