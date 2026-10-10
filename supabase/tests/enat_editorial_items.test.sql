@@ -11,9 +11,9 @@ select ok(
   'Row-level security is enabled'
 );
 
-select has_policy('public', 'enat_editorial_items', 'enat_editorial_admin_select', 'Admin-only SELECT policy exists');
-select has_policy('public', 'enat_editorial_items', 'enat_editorial_admin_insert', 'Admin-only INSERT policy exists');
-select has_policy('public', 'enat_editorial_items', 'enat_editorial_admin_update', 'Admin-only UPDATE policy exists');
+select ok(exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'enat_editorial_items' and policyname = 'enat_editorial_admin_select'), 'Admin-only SELECT policy exists');
+select ok(exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'enat_editorial_items' and policyname = 'enat_editorial_admin_insert'), 'Admin-only INSERT policy exists');
+select ok(exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'enat_editorial_items' and policyname = 'enat_editorial_admin_update'), 'Admin-only UPDATE policy exists');
 
 select ok(
   not has_table_privilege('anon', 'public.enat_editorial_items', 'select'),
