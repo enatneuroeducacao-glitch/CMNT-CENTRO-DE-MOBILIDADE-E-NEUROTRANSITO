@@ -1,6 +1,6 @@
 -- ENAT Editorial Studio — Fase 1
 -- Execute no Supabase SQL Editor somente após revisão em homologação.
--- Admin authorization uses trusted JWT app_metadata, never user-editable user_metadata.
+-- Admin authorization reuses the existing CMNT admin registry via public.cmnt_is_admin().
 create table if not exists public.enat_editorial_items (
   id uuid primary key default gen_random_uuid(),
   title varchar(180) not null,
@@ -23,11 +23,11 @@ alter table public.enat_editorial_items enable row level security;
 revoke all on public.enat_editorial_items from anon, authenticated;
 grant select, insert, update on public.enat_editorial_items to authenticated;
 drop policy if exists enat_editorial_admin_select on public.enat_editorial_items;
-create policy enat_editorial_admin_select on public.enat_editorial_items for select to authenticated using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+create policy enat_editorial_admin_select on public.enat_editorial_items for select to authenticated using (public.cmnt_is_admin());
 drop policy if exists enat_editorial_admin_insert on public.enat_editorial_items;
-create policy enat_editorial_admin_insert on public.enat_editorial_items for insert to authenticated with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin' and created_by = auth.uid() and updated_by = auth.uid());
+create policy enat_editorial_admin_insert on public.enat_editorial_items for insert to authenticated with check (public.cmnt_is_admin() and created_by = auth.uid() and updated_by = auth.uid());
 drop policy if exists enat_editorial_admin_update on public.enat_editorial_items;
-create policy enat_editorial_admin_update on public.enat_editorial_items for update to authenticated using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin') with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin' and updated_by = auth.uid());
+create policy enat_editorial_admin_update on public.enat_editorial_items for update to authenticated using (public.cmnt_is_admin()) with check (public.cmnt_is_admin() and updated_by = auth.uid());
 
 -- Keep ordering and audit timestamps accurate for every edit.
 create or replace function public.enat_editorial_set_updated_at()
