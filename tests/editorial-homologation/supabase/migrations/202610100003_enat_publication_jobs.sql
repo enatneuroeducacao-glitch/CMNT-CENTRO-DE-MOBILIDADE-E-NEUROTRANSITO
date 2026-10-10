@@ -59,7 +59,7 @@ create unique index if not exists enat_publication_idempotency_key_idx
 create or replace function public.enat_claim_publication_jobs(p_limit integer default 10)
 returns setof public.enat_publication_jobs
 language plpgsql security definer set search_path = ''
-as $
+as $$
 begin
   if coalesce(auth.role(), '') <> 'service_role' then
     raise exception 'Service role required' using errcode = '42501';
@@ -77,7 +77,7 @@ begin
       claimed_at = now(), claim_token = gen_random_uuid(), updated_at = now()
   from due where j.id = due.id returning j.*;
 end;
-$;
+$$;
 revoke all on function public.enat_claim_publication_jobs(integer) from public, anon, authenticated;
 grant execute on function public.enat_claim_publication_jobs(integer) to service_role;
 
