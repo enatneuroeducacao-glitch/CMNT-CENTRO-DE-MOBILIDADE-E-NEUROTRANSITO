@@ -26,6 +26,9 @@ create index if not exists enat_publication_item_idx
 create unique index if not exists enat_publication_active_item_channel_time_idx
   on public.enat_publication_jobs (editorial_item_id, channel, scheduled_at)
   where status <> 'cancelled';
+create unique index if not exists enat_publication_active_item_channel_idx
+  on public.enat_publication_jobs (editorial_item_id, channel)
+  where status in ('queued','publishing','published');
 
 alter table public.enat_publication_jobs enable row level security;
 revoke all on public.enat_publication_jobs from anon, authenticated;
