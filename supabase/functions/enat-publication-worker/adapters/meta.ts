@@ -2,18 +2,18 @@ import { requestJson, safeFailure, type AdapterConfig, type PublishInput, type P
 export async function publishFacebook(input: PublishInput, config: AdapterConfig & { pageId: string }): Promise<PublishResult> {
   if (!input.body.trim()) return { success: false, retryable: false, safeError: "Texto vazio." };
   const version = config.apiVersion || Deno.env.get("META_GRAPH_API_VERSION");
-  if (!version || !config.pageId || !config.accessToken) return { success: false, retryable: false, safeError: "Meta não configurada." };
+  if (!version || !/^v\\d+\\.\\d+$/.test(version) || !config.pageId || !config.accessToken) return { success: false, retryable: false, safeError: "Meta não configurada ou versão de API inválida." };
   try {
     const body = new URLSearchParams({ message: input.body, access_token: config.accessToken });
     if (input.source_url) body.set("link", input.source_url);
     const { response, data } = await requestJson(`https://graph.facebook.com/${version}/${encodeURIComponent(config.pageId)}/feed`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
     if (!response.ok || typeof data.id !== "string") return safeFailure(response.status, "Meta API recusou publicação.");
     return { success: true, remotePostId: data.id };
-  } catch { return { success: false, retryable: true, safeError: "Falha de rede ao chamar Meta; verificar reconciliação antes de repetir." }; }
+  } catch { return { success: false, retryable: false, safeError: "Falha de rede ao chamar Meta; verificar reconciliação antes de repetir." }; }
 }
 export async function publishInstagram(input: PublishInput, config: AdapterConfig & { instagramUserId: string }): Promise<PublishResult> {
   const version = config.apiVersion || Deno.env.get("META_GRAPH_API_VERSION");
-  if (!version || !config.instagramUserId || !config.accessToken) return { success: false, retryable: false, safeError: "Instagram não configurado." };
+  if (!version || !/^v\\d+\\.\\d+$/.test(version) || !config.instagramUserId || !config.accessToken) return { success: false, retryable: false, safeError: "Instagram não configurado ou versão de API inválida." };
   if (!input.mediaUrl || !/^https:\/\//i.test(input.mediaUrl)) return { success: false, retryable: false, safeError: "Instagram exige URL HTTPS pública de mídia nesta versão do adaptador." };
   try {
     const create = await requestJson(`https://graph.facebook.com/${version}/${encodeURIComponent(config.instagramUserId)}/media`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ image_url: input.mediaUrl, caption: input.body, access_token: config.accessToken }) });
