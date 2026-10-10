@@ -1,5 +1,7 @@
 begin;
 
+create extension if not exists pgtap with schema extensions;
+
 select plan(8);
 
 select has_table('public', 'enat_editorial_items', 'Editorial table exists');
