@@ -41,8 +41,8 @@ async function serviceRequest(path: string, init: RequestInit = {}) {
 
 function configuredChannels(): Channel[] {
   const channels: Channel[] = [];
-  if (env("META_ACCESS_TOKEN") && env("META_PAGE_ID")) channels.push("facebook");
-  if (env("META_ACCESS_TOKEN") && env("META_INSTAGRAM_USER_ID")) channels.push("instagram");
+  if (env("META_ACCESS_TOKEN") && env("META_PAGE_ID") && env("META_GRAPH_API_VERSION")) channels.push("facebook");
+  if (env("META_ACCESS_TOKEN") && env("META_INSTAGRAM_USER_ID") && env("META_GRAPH_API_VERSION")) channels.push("instagram");
   if (env("LINKEDIN_ACCESS_TOKEN") && env("LINKEDIN_AUTHOR_URN") && env("LINKEDIN_API_VERSION")) channels.push("linkedin");
   // X requires a user-context access token with write permission, not an app-only bearer token.
   if (env("X_USER_ACCESS_TOKEN")) channels.push("x");
@@ -99,7 +99,7 @@ Deno.serve(async (req: Request) => {
     return json(200, { status: "safe_mode", claimed: 0, message: "Publicação externa desativada pela feature flag." });
   }
 
-  const required = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "META_GRAPH_API_VERSION"];
+  const required = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"];
   if (required.some((key) => !env(key))) return json(200, { status: "safe_mode", claimed: 0, message: "Configuração básica do worker incompleta." });
   const channels = configuredChannels();
   if (channels.length === 0) return json(200, { status: "safe_mode", claimed: 0, message: "Nenhum canal possui credenciais completas." });
