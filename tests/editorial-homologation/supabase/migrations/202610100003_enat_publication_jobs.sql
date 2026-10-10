@@ -130,3 +130,33 @@ end;
 $$;
 revoke all on function public.enat_finish_publication_job(uuid, uuid, text, text, text) from public, anon, authenticated;
 grant execute on function public.enat_finish_publication_job(uuid, uuid, text, text, text) to service_role;
+
+
+-- Recover stale claims into a terminal failed state for manual reconciliation.
+-- Never requeue automatically: the external provider may have accepted the post before the worker crashed.
+create or replace function public.enat_recover_stale_publication_jobs(p_stale_minutes integer default 15)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare changed integer;
+begin
+  if coalesce(auth.role(), '') <> 'service_role' then
+    raise exception 'Service role required' using errcode = '42501';
+  end if;
+  update public.enat_publication_jobs
+  set status = 'failed',
+      last_error = 'Tarefa presa em publishing; verificar a rede social e reconciliar manualmente antes de qualquer nova tentativa.',
+      claimed_at = null,
+      claim_token = null,
+      updated_at = now()
+  where status = 'publishing'
+    and claimed_at is not null
+    and claimed_at < now() - make_interval(mins => greatest(15, least(coalesce(p_stale_minutes, 15), 1440)));
+  get diagnostics changed = row_count;
+  return changed;
+end;
+$$;
+revoke all on function public.enat_recover_stale_publication_jobs(integer) from public, anon, authenticated;
+grant execute on function public.enat_recover_stale_publication_jobs(integer) to service_role;
