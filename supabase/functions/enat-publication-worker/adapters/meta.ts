@@ -43,7 +43,7 @@ async function waitForInstagramContainer(containerId: string, config: AdapterCon
 export async function publishInstagram(input: PublishInput, config: AdapterConfig & { instagramUserId: string }): Promise<PublishResult> {
   const version = config.apiVersion || Deno.env.get("META_GRAPH_API_VERSION");
   if (!version || !/^v\\d+\\.\\d+$/.test(version) || !config.instagramUserId || !config.accessToken) return { success: false, retryable: false, safeError: "Instagram não configurado ou versão de API inválida." };
-  if (!input.mediaUrl || !/^https:\\/\\//i.test(input.mediaUrl)) return { success: false, retryable: false, safeError: "Instagram exige URL HTTPS pública de mídia nesta versão do adaptador." };
+  if (!input.mediaUrl || !input.mediaUrl.toLowerCase().startsWith("https://")) return { success: false, retryable: false, safeError: "Instagram exige URL HTTPS pública de mídia nesta versão do adaptador." };
   try {
     const create = await requestJson(`https://graph.facebook.com/${version}/${encodeURIComponent(config.instagramUserId)}/media`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ image_url: input.mediaUrl, caption: input.body, access_token: config.accessToken }) });
     if (!create.response.ok || typeof create.data.id !== "string") return safeFailure(create.response.status, "Meta não criou o container de mídia.");
