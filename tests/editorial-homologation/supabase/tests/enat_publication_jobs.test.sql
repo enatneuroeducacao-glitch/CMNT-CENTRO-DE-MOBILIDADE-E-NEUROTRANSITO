@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(7);
+select plan(8);
 select has_table('public','enat_publication_jobs','Publication job queue exists');
 select ok((select relrowsecurity from pg_class where oid='public.enat_publication_jobs'::regclass),'RLS is enabled on publication jobs');
 select ok(exists(select 1 from pg_policies where schemaname='public' and tablename='enat_publication_jobs' and policyname='enat_publication_admin_select'),'Admin-only read policy exists');
@@ -27,6 +27,12 @@ select lives_ok(
  $q$insert into public.enat_publication_jobs (editorial_item_id,channel,scheduled_at,created_by,updated_by)
  values ('00000000-0000-0000-0000-000000000112','instagram',now()+interval '1 day','00000000-0000-0000-0000-000000000011','00000000-0000-0000-0000-000000000011')$q$,
  'Approved content can be queued'
+);
+select throws_ok(
+ $q$insert into public.enat_publication_jobs (editorial_item_id,channel,scheduled_at,created_by,updated_by)
+ values ('00000000-0000-0000-0000-000000000112','instagram',now()+interval '2 days','00000000-0000-0000-0000-000000000011','00000000-0000-0000-0000-000000000011')$q$,
+ '23505', null,
+ 'Duplicate active item/channel publication is blocked'
 );
 reset role;
 select * from finish();
