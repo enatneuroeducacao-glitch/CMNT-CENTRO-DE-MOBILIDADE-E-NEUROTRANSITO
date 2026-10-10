@@ -5,7 +5,7 @@
 const nav=document.getElementById('editorialNav');
 const intro=document.getElementById('viewOverview'),notice=document.getElementById('overviewNotice'),statsEl=document.getElementById('overviewStats');
 const formView=document.getElementById('viewEditorial'),queueView=document.getElementById('viewQueue'),calendarView=document.getElementById('viewCalendar'),flowView=document.getElementById('editorialFlow');
-const layout=document.querySelector('.layout');
+const layout=document.querySelector('.layout');const leftColumn=layout&&layout.children[0],rightColumn=layout&&layout.children[1];
 const mediaView=document.createElement('section');
 mediaView.className='panel screen-hidden';mediaView.id='viewMedia';
 mediaView.innerHTML='<h2>Biblioteca de mídia</h2><p class="muted" style="margin-top:8px">Este módulo ainda não está disponível na Fase 1. A biblioteca será implementada em uma etapa posterior.</p>';
@@ -13,11 +13,11 @@ layout.parentNode.insertBefore(mediaView,layout.nextSibling);
 function showScreen(view){
  const all=[intro,notice,statsEl,formView,queueView,calendarView,flowView,mediaView];
  all.forEach(el=>{if(el)el.classList.add('screen-hidden')});
- if(layout)layout.classList.add('screen-hidden');
+ if(layout)layout.classList.add('screen-hidden');if(leftColumn)leftColumn.classList.add('screen-hidden');if(rightColumn)rightColumn.classList.add('screen-hidden');
  if(view==='overview'){[intro,notice,statsEl].forEach(el=>el&&el.classList.remove('screen-hidden'));}
- if(view==='editorial'){if(layout)layout.classList.remove('screen-hidden');formView.classList.remove('screen-hidden');formView.parentElement.classList.remove('screen-hidden');queueView.classList.add('screen-hidden');calendarView.classList.add('screen-hidden');flowView.classList.add('screen-hidden');}
- if(view==='queue'){if(layout)layout.classList.remove('screen-hidden');queueView.classList.remove('screen-hidden');queueView.parentElement.classList.remove('screen-hidden');formView.classList.add('screen-hidden');calendarView.classList.add('screen-hidden');flowView.classList.add('screen-hidden');}
- if(view==='calendar'){if(layout)layout.classList.remove('screen-hidden');calendarView.classList.remove('screen-hidden');calendarView.parentElement.classList.remove('screen-hidden');flowView.classList.add('screen-hidden');formView.classList.add('screen-hidden');queueView.classList.add('screen-hidden');}
+ if(view==='editorial'){if(layout)layout.classList.remove('screen-hidden');if(leftColumn)leftColumn.classList.remove('screen-hidden');formView.classList.remove('screen-hidden');formView.parentElement.classList.remove('screen-hidden');queueView.classList.add('screen-hidden');calendarView.classList.add('screen-hidden');flowView.classList.add('screen-hidden');}
+ if(view==='queue'){if(layout)layout.classList.remove('screen-hidden');if(leftColumn)leftColumn.classList.remove('screen-hidden');queueView.classList.remove('screen-hidden');queueView.parentElement.classList.remove('screen-hidden');formView.classList.add('screen-hidden');calendarView.classList.add('screen-hidden');flowView.classList.add('screen-hidden');}
+ if(view==='calendar'){if(layout)layout.classList.remove('screen-hidden');if(rightColumn)rightColumn.classList.remove('screen-hidden');calendarView.classList.remove('screen-hidden');calendarView.parentElement.classList.remove('screen-hidden');flowView.classList.add('screen-hidden');formView.classList.add('screen-hidden');queueView.classList.add('screen-hidden');}
  if(view==='media')mediaView.classList.remove('screen-hidden');
  if(nav)nav.querySelectorAll('button[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
  window.scrollTo({top:0,behavior:'smooth'});
