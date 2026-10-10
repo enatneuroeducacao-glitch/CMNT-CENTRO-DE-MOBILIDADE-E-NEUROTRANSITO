@@ -125,3 +125,48 @@ end;
 $$;
 revoke all on function public.enat_claim_publication_jobs(integer) from public, anon, authenticated;
 grant execute on function public.enat_claim_publication_jobs(integer) to service_role;
+
+-- Finalize only a job held by the caller's current claim token.
+-- Network ambiguity is handled as failed/manual reconciliation; never auto-requeue here.
+create or replace function public.enat_finish_publication_job(
+  p_job_id uuid,
+  p_claim_token uuid,
+  p_status text,
+  p_remote_post_id text default null,
+  p_error text default null
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare changed integer;
+begin
+  if coalesce(auth.role(), '') <> 'service_role' then
+    raise exception 'Service role required' using errcode = '42501';
+  end if;
+  if p_status not in ('published','failed') then
+    raise exception 'Invalid terminal status' using errcode = '22023';
+  end if;
+  if p_status = 'published' and nullif(btrim(p_remote_post_id), '') is null then
+    raise exception 'Remote post id required for published status' using errcode = '22023';
+  end if;
+
+  update public.enat_publication_jobs
+  set status = p_status,
+      remote_post_id = case when p_status = 'published' then p_remote_post_id else null end,
+      published_at = case when p_status = 'published' then now() else null end,
+      last_error = case when p_status = 'failed' then left(coalesce(nullif(btrim(p_error), ''), 'Falha sem detalhe; verificar reconciliação.'), 500) else null end,
+      claimed_at = null,
+      claim_token = null,
+      updated_at = now()
+  where id = p_job_id
+    and status = 'publishing'
+    and claim_token = p_claim_token;
+
+  get diagnostics changed = row_count;
+  return changed = 1;
+end;
+$$;
+revoke all on function public.enat_finish_publication_job(uuid, uuid, text, text, text) from public, anon, authenticated;
+grant execute on function public.enat_finish_publication_job(uuid, uuid, text, text, text) to service_role;
