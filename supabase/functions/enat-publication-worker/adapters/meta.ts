@@ -20,7 +20,6 @@ async function waitForInstagramContainer(containerId: string, config: AdapterCon
   // Bound the wait so a stuck container never occupies a worker indefinitely.
   const deadline = Date.now() + 60_000;
   while (Date.now() < deadline) {
-    await sleep(2_000);
     const query = new URLSearchParams({ fields: "status_code,status", access_token: config.accessToken });
     const { response, data } = await requestJson(
       `https://graph.facebook.com/${version}/${encodeURIComponent(containerId)}?${query.toString()}`,
@@ -36,6 +35,7 @@ async function waitForInstagramContainer(containerId: string, config: AdapterCon
     if (status !== "IN_PROGRESS" && status !== "PUBLISHED") {
       return { success: false, retryable: false, safeError: "Meta retornou estado desconhecido para o container Instagram." };
     }
+    await sleep(2_000);
   }
   return { success: false, retryable: false, safeError: "Timeout aguardando processamento do container Instagram; verificar estado antes de repetir." };
 }
