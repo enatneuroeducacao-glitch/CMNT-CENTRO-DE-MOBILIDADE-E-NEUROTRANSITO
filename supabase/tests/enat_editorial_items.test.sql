@@ -57,8 +57,8 @@ set local role authenticated;
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000001","role":"authenticated","app_metadata":{}}';
 select is((select count(*) from public.enat_editorial_items), 1::bigint, 'Admin can read editorial items');
 select lives_ok(
-  $insert into public.enat_editorial_items (title, body, category, created_by, updated_by)
-    values ('Rascunho criado pelo admin', 'Conteúdo válido', 'Pesquisa e Evidências', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001')$,
+  $q$insert into public.enat_editorial_items (title, body, category, created_by, updated_by)
+    values ('Rascunho criado pelo admin', 'Conteúdo válido', 'Pesquisa e Evidências', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001')$q$,
   'Admin can insert editorial items'
 );
 reset role;
@@ -68,7 +68,7 @@ set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000002","r
 select is((select count(*) from public.enat_editorial_items), 0::bigint, 'Non-admin cannot read editorial items');
 select throws_ok(
   $insert into public.enat_editorial_items (title, body, category, created_by, updated_by)
-    values ('Tentativa não autorizada', 'Conteúdo inválido', 'Pesquisa e Evidências', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002')$,
+    values ('Tentativa não autorizada', 'Conteúdo inválido', 'Pesquisa e Evidências', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002')$q$,
   '42501',
   'Non-admin insert is rejected by RLS'
 );
