@@ -67,7 +67,7 @@ set local role authenticated;
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated","app_metadata":{}}';
 select is((select count(*) from public.enat_editorial_items), 0::bigint, 'Non-admin cannot read editorial items');
 select throws_ok(
-  $insert into public.enat_editorial_items (title, body, category, created_by, updated_by)
+  $q$insert into public.enat_editorial_items (title, body, category, created_by, updated_by)
     values ('Tentativa não autorizada', 'Conteúdo inválido', 'Pesquisa e Evidências', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002')$q$,
   '42501',
   'Non-admin insert is rejected by RLS'
