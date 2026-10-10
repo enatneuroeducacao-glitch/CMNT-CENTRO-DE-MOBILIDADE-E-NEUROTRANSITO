@@ -62,6 +62,36 @@ Deno.test("adaptadores oficiais usam respostas simuladas e nunca dependem de red
       accessToken: "test-token", apiVersion: "v99.0", instagramUserId: "456",
     });
     if (noMedia.success || noMedia.retryable) throw new Error("Instagram without media must fail closed");
+
+    const beforeErrorContainer = calls.length;
+    nextResponses = [
+      { status: 200, body: { id: "container_error" } },
+      { status: 200, body: { status_code: "ERROR", status: "Error" } },
+    ];
+    const igError = await publishInstagram(input, { accessToken: "test-token", apiVersion: "v99.0", instagramUserId: "456" });
+    if (igError.success || igError.retryable) throw new Error("Instagram ERROR container must fail closed");
+    const errorCalls = calls.slice(beforeErrorContainer);
+    if (errorCalls.some((call) => call.url.includes("/media_publish"))) throw new Error("Instagram must not publish an ERROR container");
+
+    const beforeExpiredContainer = calls.length;
+    nextResponses = [
+      { status: 200, body: { id: "container_expired" } },
+      { status: 200, body: { status_code: "EXPIRED", status: "Expired" } },
+    ];
+    const igExpired = await publishInstagram(input, { accessToken: "test-token", apiVersion: "v99.0", instagramUserId: "456" });
+    if (igExpired.success || igExpired.retryable) throw new Error("Instagram EXPIRED container must fail closed");
+    const expiredCalls = calls.slice(beforeExpiredContainer);
+    if (expiredCalls.some((call) => call.url.includes("/media_publish"))) throw new Error("Instagram must not publish an EXPIRED container");
+
+    const beforeStatusFailure = calls.length;
+    nextResponses = [
+      { status: 200, body: { id: "container_status_failure" } },
+      { status: 403, body: { error: "forbidden" } },
+    ];
+    const igStatusFailure = await publishInstagram(input, { accessToken: "test-token", apiVersion: "v99.0", instagramUserId: "456" });
+    if (igStatusFailure.success || igStatusFailure.retryable) throw new Error("Instagram status-query failure must fail closed");
+    const statusFailureCalls = calls.slice(beforeStatusFailure);
+    if (statusFailureCalls.some((call) => call.url.includes("/media_publish"))) throw new Error("Instagram must not publish when status cannot be verified");
   } finally {
     globalThis.fetch = originalFetch;
   }
