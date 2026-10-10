@@ -68,8 +68,9 @@ where editorial_item_id = '00000000-0000-0000-0000-000000000112'
   and channel = 'instagram' and status = 'queued';
 set local role service_role;
 set local request.jwt.claims = '{"role":"service_role"}';
-select lives_ok(
- $q$select 1 from public.enat_claim_publication_jobs(10) where editorial_item_id = '00000000-0000-0000-0000-000000000112'$q$,
+select is(
+ (select count(*)::integer from public.enat_claim_publication_jobs(10) where editorial_item_id = '00000000-0000-0000-0000-000000000112'),
+ 1,
  'Approved due job can be claimed by service role'
 );
 select is(
