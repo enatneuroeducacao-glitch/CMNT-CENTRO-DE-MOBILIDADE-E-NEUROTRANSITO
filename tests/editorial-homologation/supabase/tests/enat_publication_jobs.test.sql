@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(14);
+select plan(15);
 select has_table('public','enat_publication_jobs','Publication job queue exists');
 select ok((select relrowsecurity from pg_class where oid='public.enat_publication_jobs'::regclass),'RLS is enabled on publication jobs');
 select ok(exists(select 1 from pg_policies where schemaname='public' and tablename='enat_publication_jobs' and policyname='enat_publication_admin_select'),'Admin-only read policy exists');
@@ -74,5 +74,17 @@ select is(public.enat_recover_stale_publication_jobs(15),1,'Stale publishing job
 select is((select status from public.enat_publication_jobs where editorial_item_id='00000000-0000-0000-0000-000000000114' and channel='facebook'),'failed','Recovered stale job is not automatically requeued');
 reset role;
 
+insert into public.enat_editorial_items (id,title,body,category,status,created_by,updated_by)
+values ('00000000-0000-0000-0000-000000000115','Claim recente','Tarefa recente não deve ser recuperada','Pesquisa e Evidências','approved','00000000-0000-0000-0000-000000000011','00000000-0000-0000-0000-000000000011');
+insert into public.enat_publication_jobs (editorial_item_id,channel,scheduled_at,created_by,updated_by)
+values ('00000000-0000-0000-0000-000000000115','linkedin',now()-interval '1 minute','00000000-0000-0000-0000-000000000011','00000000-0000-0000-0000-000000000011');
+update public.enat_publication_jobs
+set status='publishing', claimed_at=now()-interval '2 minutes', claim_token='00000000-0000-0000-0000-000000000998'
+where editorial_item_id='00000000-0000-0000-0000-000000000115' and channel='linkedin';
+set local role service_role;
+set local request.jwt.claims = '{"role":"service_role"}';
+select is(public.enat_recover_stale_publication_jobs(15),0,'Recent claim remains untouched by stale recovery');
+
+reset role;
 select * from finish();
 rollback;
