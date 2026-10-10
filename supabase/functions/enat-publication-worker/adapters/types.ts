@@ -4,7 +4,7 @@ export type PublishResult = { success: true; remotePostId: string } | { success:
 export type AdapterConfig = { accessToken: string; apiVersion?: string };
 export function safeFailure(status: number, message: string): PublishResult {
   const safe = message.replace(/Bearer\s+\S+/gi, "Bearer [REDACTED]").replace(/access_token[=:]\s*[^&\s]+/gi, "access_token=[REDACTED]").slice(0, 500);
-  return { success: false, retryable: status === 408 || status === 429 || status >= 500, safeError: safe || `Provider HTTP ${status}` };
+  return { success: false, retryable: status === 429, safeError: safe || `Provider HTTP ${status}` };
 }
 export async function requestJson(url: string, init: RequestInit, timeoutMs = 20000): Promise<{ response: Response; data: Record<string, unknown> }> {
   const controller = new AbortController();
