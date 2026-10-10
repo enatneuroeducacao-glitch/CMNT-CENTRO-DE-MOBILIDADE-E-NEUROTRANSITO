@@ -155,7 +155,13 @@ Deno.serve(async (req: Request) => {
         // Never retry automatically after an ambiguous network/API outcome.
         failed++;
         needsReconciliation++;
-        await finalize(job, { success: false, retryable: false, safeError: "Resultado ambíguo; reconciliar na rede social antes de qualquer nova tentativa." });
+        // Finalization itself can fail during a database/network outage. Do not let that
+        // abort the whole batch; stale-claim recovery will move this job to manual review.
+        try {
+          await finalize(job, { success: false, retryable: false, safeError: "Resultado ambíguo; reconciliar na rede social antes de qualquer nova tentativa." });
+        } catch {
+          // Keep the claim intact. The recovery RPC will terminalize it after the stale threshold.
+        }
       }
     }
     return json(200, { status: "completed", claimed: jobs.length, published, failed, needsReconciliation });
