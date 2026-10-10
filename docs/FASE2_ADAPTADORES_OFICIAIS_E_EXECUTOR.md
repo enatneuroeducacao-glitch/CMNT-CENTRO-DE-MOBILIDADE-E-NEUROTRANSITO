@@ -23,7 +23,7 @@ Usar secrets separados entre homologação e produção. Os tokens devem ser pro
 
 ## Contrato dos adaptadores
 Cada adaptador deve aceitar job validado e payload snapshot, e retornar:
-- `success`, `remotePostId`, `publishedAt`, `retryable`, `safeError`.
+- Contrato atual: sucesso retorna `success` e `remotePostId`; falha retorna `success=false`, `retryable` e `safeError`. O timestamp de publicação é definido pela RPC de finalização no banco, não pelo adaptador.
 - Confirmar publicação apenas com resposta oficial inequívoca e identificador remoto.
 - Sanitizar mensagens e cabeçalhos; jamais persistir tokens, secrets ou resposta bruta com dados sensíveis.
 - Não tentar novamente automaticamente em timeout ambíguo até reconciliar com a API.
@@ -37,9 +37,9 @@ Cada adaptador deve aceitar job validado e payload snapshot, e retornar:
 4. Executar adaptador pelo canal e aplicar timeout explícito.
 5. Confirmar estado com RPC protegida e `claim_token`; não permitir update arbitrário pelo cliente.
 6. Em sucesso: `published`, `remote_post_id`, `published_at`.
-7. Em falha transitória comprovada: `failed` com erro sanitizado; retry com backoff limitado, após verificar duplicação.
+7. No estado atual, falhas são finalizadas como `failed`; não há repetição automática nem backoff. Qualquer nova tentativa depende de reconciliação manual para evitar duplicação.
 8. Em timeout ambíguo: não re-enfileirar automaticamente; marcar falha de reconciliação para inspeção.
-9. Cancelamento só é garantido antes da reivindicação; após início, informar que a publicação pode estar em curso.
+9. Jobs `publishing` antigos são encerrados como `failed` após 15 minutos para reconciliação manual; não são reenfileirados automaticamente. Cancelamento só é garantido antes da reivindicação; após início, a publicação pode estar em curso.
 10. Registrar métricas sem tokens ou payloads sensíveis.
 
 ## Testes obrigatórios antes de habilitar
