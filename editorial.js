@@ -25,11 +25,12 @@ function calendar(){
  for(let i=0;i<offset;i++)html+='<div class="min-h-20 rounded-lg bg-slate-50 border border-slate-100 p-1"></div>';
  for(let d=1;d<=days;d++){
   const key=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+  const scheduledCount=jobs.filter(j=>j.scheduled_at&&new Date(j.scheduled_at).toLocaleDateString('en-CA',{timeZone:j.timezone||'America/Sao_Paulo'})===key&&['queued','publishing','published','failed'].includes(j.status)).length;
   const items=records.filter(r=>r.editorial_date===key);
-  html+='<div class="min-h-20 rounded-lg border border-slate-200 p-1.5 '+(items.length?'bg-emerald-50':'bg-white')+'"><div class="text-xs font-black">'+d+'</div>'+items.slice(0,2).map(r=>'<button type="button" onclick="enatEdFocus(\''+r.id+'\')" title="'+e(r.title)+'" class="block w-full text-left mt-1 px-1 py-1 rounded bg-white border border-emerald-200 text-[10px] leading-tight font-bold text-emerald-800" style="overflow-wrap:anywhere">'+e(r.title.slice(0,35))+'</button>').join('')+(items.length>2?'<div class="text-[10px] text-slate-500 mt-1">+'+(items.length-2)+' conteúdos</div>':'')+'</div>';
+  html+='<div class="min-h-20 rounded-lg border border-slate-200 p-1.5 '+(items.length?'bg-emerald-50':'bg-white')+'"><div class="text-xs font-black">'+d+'</div>'+items.slice(0,2).map(r=>'<button type="button" onclick="enatEdFocus(\''+r.id+'\')" title="'+e(r.title)+'" class="block w-full text-left mt-1 px-1 py-1 rounded bg-white border border-emerald-200 text-[10px] leading-tight font-bold text-emerald-800" style="overflow-wrap:anywhere">'+e(r.title.slice(0,35))+'</button>').join('')+(scheduledCount?'<div class="mt-1 px-1 py-1 rounded border border-blue-200 bg-blue-50 text-[10px] font-bold text-blue-800">↗ '+scheduledCount+' publicação(ões) na fila</div>':'')+(items.length>2?'<div class="text-[10px] text-slate-500 mt-1">+'+(items.length-2)+' conteúdos</div>':'')+'</div>';
  }
  const total=offset+days;for(let i=0;i<(7-total%7)%7;i++)html+='<div class="min-h-20 rounded-lg bg-slate-50 border border-slate-100 p-1"></div>';
- el.innerHTML=html+'</div><p class="text-xs text-slate-500 mt-3">A data é editorial; não agenda nem publica conteúdo automaticamente nesta fase.</p>';
+ el.innerHTML=html+'</div><p class="text-xs text-slate-500 mt-3"><span class="text-emerald-700 font-bold">Verde:</span> data editorial · <span class="text-blue-700 font-bold">Azul:</span> publicações na fila. O agendamento ainda não envia conteúdo às redes sociais.</p>';
 }
 window.enatEdFocus=function(id){const el=document.getElementById('enatEditorialList');if(el){const select=document.getElementById('enatEdFilter');if(select)select.value='';list();const target=Array.from(el.querySelectorAll('article')).find(a=>a.dataset.editorialId===id);if(target)target.scrollIntoView({behavior:'smooth',block:'center'})}};
 function metrics(){const el=document.getElementById('enatEditorialMetrics');if(!el)return;const n=s=>records.filter(x=>x.status===s).length;el.innerHTML=[['Rascunhos',n('draft')],['Aguardando aprovação',n('review')],['Aprovados',n('approved')]].map(x=>'<div class="card rounded-2xl p-4"><div class="text-sm text-slate-500">'+x[0]+'</div><div class="text-3xl font-black mt-1">'+x[1]+'</div></div>').join('')}
@@ -53,6 +54,7 @@ async function loadJobs(){
   jobsTableAvailable=true;jobs=res.data||[];
   if(notice)notice.innerHTML='';
   renderJobs();
+  calendar();
  }catch(err){
   jobsTableAvailable=false;
   if(notice)notice.innerHTML='<div class="rounded-xl bg-amber-50 p-4 text-sm text-amber-800">Não foi possível consultar a fila. Nenhum envio externo foi realizado.</div>';
