@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(9);
+select plan(11);
 select has_table('public','enat_publication_jobs','Publication job queue exists');
 select ok((select relrowsecurity from pg_class where oid='public.enat_publication_jobs'::regclass),'RLS is enabled on publication jobs');
 select ok(exists(select 1 from pg_policies where schemaname='public' and tablename='enat_publication_jobs' and policyname='enat_publication_admin_select'),'Admin-only read policy exists');
@@ -44,6 +44,20 @@ update public.enat_editorial_items set status='draft' where id='00000000-0000-00
 set local role service_role;
 set local request.jwt.claims = '{"role":"service_role"}';
 select is((select count(*)::integer from public.enat_claim_publication_jobs(10)),0,'Unapproved editorial content is never claimed by worker');
+reset role;
+-- Claim the approved future job only after making it due, then finalize it with the returned token.
+update public.enat_publication_jobs
+set scheduled_at = now() - interval '1 minute'
+where editorial_item_id = '00000000-0000-0000-0000-000000000112'
+  and channel = 'instagram' and status = 'queued';
+set local role service_role;
+set local request.jwt.claims = '{"role":"service_role"}';
+select lives_ok(
+ $q$with claimed as (select * from public.enat_claim_publication_jobs(10) where editorial_item_id = '00000000-0000-0000-0000-000000000112')
+ select public.enat_finish_publication_job(id, claim_token, 'published', 'mock_remote_post_123', null) from claimed$q$,
+ 'Claimed publication job can be finalized with its claim token'
+);
+select is((select status from public.enat_publication_jobs where editorial_item_id='00000000-0000-0000-0000-000000000112' and channel='instagram'),'published','Finalized job is marked published');
 reset role;
 select * from finish();
 rollback;
