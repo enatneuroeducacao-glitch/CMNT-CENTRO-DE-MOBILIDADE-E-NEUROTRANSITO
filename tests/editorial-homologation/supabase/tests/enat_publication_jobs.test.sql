@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(13);
+select plan(14);
 select has_table('public','enat_publication_jobs','Publication job queue exists');
 select ok((select relrowsecurity from pg_class where oid='public.enat_publication_jobs'::regclass),'RLS is enabled on publication jobs');
 select ok(exists(select 1 from pg_policies where schemaname='public' and tablename='enat_publication_jobs' and policyname='enat_publication_admin_select'),'Admin-only read policy exists');
