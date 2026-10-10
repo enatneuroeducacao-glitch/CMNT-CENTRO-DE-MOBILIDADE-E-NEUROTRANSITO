@@ -26,7 +26,7 @@ async function waitForInstagramContainer(containerId: string, config: AdapterCon
       { method: "GET" },
       10_000,
     );
-    if (!response.ok) return safeFailure(response.status, "Meta não permitiu consultar o estado do container Instagram.");
+    if (!response.ok) return { success: false, retryable: false, safeError: `Meta não permitiu consultar o estado do container Instagram (HTTP ${response.status}); reconciliar antes de repetir.` };
     const status = typeof data.status_code === "string" ? data.status_code : "";
     if (status === "FINISHED") return null;
     if (status === "ERROR" || status === "EXPIRED") {
