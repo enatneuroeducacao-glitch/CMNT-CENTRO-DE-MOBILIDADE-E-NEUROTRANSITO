@@ -67,7 +67,8 @@ begin
   return query
   with due as (
     select j.id from public.enat_publication_jobs j
-    where j.status = 'queued' and j.scheduled_at <= now()
+    join public.enat_editorial_items e on e.id = j.editorial_item_id
+    where j.status = 'queued' and j.scheduled_at <= now() and e.status = 'approved'
     order by j.scheduled_at, j.created_at
     for update skip locked
     limit greatest(1, least(coalesce(p_limit, 10), 50))
