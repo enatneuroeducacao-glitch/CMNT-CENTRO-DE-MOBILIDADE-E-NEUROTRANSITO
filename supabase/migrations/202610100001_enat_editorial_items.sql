@@ -28,3 +28,22 @@ drop policy if exists enat_editorial_admin_insert on public.enat_editorial_items
 create policy enat_editorial_admin_insert on public.enat_editorial_items for insert to authenticated with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin' and created_by = auth.uid() and updated_by = auth.uid());
 drop policy if exists enat_editorial_admin_update on public.enat_editorial_items;
 create policy enat_editorial_admin_update on public.enat_editorial_items for update to authenticated using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin') with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin' and updated_by = auth.uid());
+
+-- Keep ordering and audit timestamps accurate for every edit.
+create or replace function public.enat_editorial_set_updated_at()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists enat_editorial_items_set_updated_at on public.enat_editorial_items;
+create trigger enat_editorial_items_set_updated_at
+before update on public.enat_editorial_items
+for each row execute function public.enat_editorial_set_updated_at();
+
+revoke all on function public.enat_editorial_set_updated_at() from public, anon, authenticated;
