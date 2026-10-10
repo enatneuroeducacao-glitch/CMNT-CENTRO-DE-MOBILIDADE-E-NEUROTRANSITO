@@ -34,10 +34,10 @@ Deno.test("adaptadores oficiais usam respostas simuladas e nunca dependem de red
     if (!fb.success || fb.remotePostId !== "page_post_1") throw new Error("Facebook success response not parsed");
     if (!calls.at(-1)?.url.includes("/v99.0/123/feed")) throw new Error("Facebook endpoint mismatch");
 
-    nextResponses = [{ status: 200, body: { id: "container_1" } }, { status: 200, body: { id: "ig_post_1" } }];
+    nextResponses = [{ status: 200, body: { id: "container_1" } }, { status: 200, body: { status_code: "FINISHED", status: "Finished" } }, { status: 200, body: { id: "ig_post_1" } }];
     const ig = await publishInstagram(input, { accessToken: "test-token", apiVersion: "v99.0", instagramUserId: "456" });
     if (!ig.success || ig.remotePostId !== "ig_post_1") throw new Error("Instagram publish response not parsed");
-    if (!calls.at(-2)?.url.includes("/456/media") || !calls.at(-1)?.url.includes("/456/media_publish")) {
+    if (!calls.at(-3)?.url.includes("/456/media") || !calls.at(-2)?.url.includes("/container_1?") || !calls.at(-1)?.url.includes("/456/media_publish")) {
       throw new Error("Instagram container flow mismatch");
     }
 
