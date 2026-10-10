@@ -79,7 +79,7 @@ async function schedulePublication(ev){
  const item=records.find(r=>r.id===itemId);
  if(!item||item.status!=='approved')return notify('Somente conteúdo aprovado pode ser agendado.',true);
  if(!raw)return notify('Defina a data e o horário.',true);
- const date=new Date(raw);if(Number.isNaN(date.getTime())||date.getTime()<=Date.now())return notify('Escolha uma data e horário futuros.',true);
+ const date=new Date(raw+(timezone==='UTC'?'Z':'-03:00'));if(Number.isNaN(date.getTime())||date.getTime()<=Date.now())return notify('Escolha uma data e horário futuros no fuso selecionado.',true);
  if(jobs.some(j=>j.editorial_item_id===itemId&&j.channel===channel&&['queued','publishing','published'].includes(j.status)))return notify('Já existe uma publicação ativa ou concluída deste conteúdo nesta rede. Revise a fila antes de criar outra.',true);
  if(btn)btn.disabled=true;
  const payload={editorial_item_id:itemId,channel,scheduled_at:date.toISOString(),timezone,payload_snapshot:{title:item.title,body:item.body,category:item.category,source_url:item.source_url||null},created_by:S.user.id,updated_by:S.user.id,status:'queued'};
