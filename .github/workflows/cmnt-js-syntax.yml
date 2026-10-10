@@ -39,8 +39,11 @@ jobs:
         with:
           version: latest
       - name: Start isolated local Supabase stack
+        working-directory: tests/editorial-homologation
         run: supabase start -x realtime,storage-api,imgproxy,kong,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,mailpit,supavisor
-      - name: Apply repository migrations to local database
+      - name: Apply isolated editorial migrations to local database
+        working-directory: tests/editorial-homologation
         run: supabase db reset --local
-      - name: Run pgTAP database tests
+      - name: Run editorial pgTAP database tests
+        working-directory: tests/editorial-homologation
         run: supabase test db --local
