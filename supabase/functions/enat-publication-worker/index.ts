@@ -105,6 +105,13 @@ Deno.serve(async (req: Request) => {
   if (channels.length === 0) return json(200, { status: "safe_mode", claimed: 0, message: "Nenhum canal possui credenciais completas." });
 
   try {
+    // Stale publishing jobs are terminalized for manual reconciliation, never requeued automatically.
+    const recoveryResponse = await serviceRequest("rpc/enat_recover_stale_publication_jobs", {
+      method: "POST",
+      body: JSON.stringify({ p_stale_minutes: 15 }),
+    });
+    if (!recoveryResponse.ok) return json(502, { status: "recovery_failed", claimed: 0 });
+
     const claimResponse = await serviceRequest("rpc/enat_claim_publication_jobs", {
       method: "POST",
       body: JSON.stringify({ p_limit: 10, p_channels: channels }),
