@@ -1,6 +1,6 @@
 /* Neurotrânsito PWA — fallback offline explícito; não armazena dados do usuário. */
-const CACHE_NAME = "neurotransito-shell-v4";
-const APP_SHELL = ["/offline.html", "/icons/ENAT-logo-original-192%20(1).png?v=3", "/icons/ENAT-logo-original-512%20(1).png?v=3"];
+const CACHE_NAME = "neurotransito-shell-v5";
+const APP_SHELL = ["/offline.html", "/icons/icon-enat-192.svg?v=4", "/icons/icon-enat.svg?v=4"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
