@@ -1459,7 +1459,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
     button.type = 'button';
     button.textContent = '⬇ Instalar Neurotrânsito';
     button.setAttribute('aria-label', 'Instalar aplicativo Neurotrânsito');
-    button.style.cssText = 'position:fixed;right:16px;bottom:calc(5.5rem + env(safe-area-inset-bottom, 0px));z-index:99999;border:0;border-radius:999px;padding:13px 18px;background:#16b86a;color:#07111f;font:700 14px system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.28);cursor:pointer';
+    button.style.cssText = 'position:fixed!important;right:max(14px,env(safe-area-inset-right,0px))!important;bottom:max(16px,env(safe-area-inset-bottom,0px))!important;z-index:2147483647!important;display:flex!important;visibility:visible!important;opacity:1!important;align-items:center;gap:8px;border:0;border-radius:999px;padding:14px 18px;background:#16b86a;color:#07111f;font:800 14px/1.2 system-ui,sans-serif;box-shadow:0 8px 28px rgba(0,0,0,.35);cursor:pointer;max-width:calc(100vw - 28px)';
     button.addEventListener('click', async function () {
       if (!installPrompt) { showInstructions(); return; }
       installPrompt.prompt();
@@ -1473,9 +1473,9 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
     installPrompt = event;
   });
   window.addEventListener('appinstalled', function () {
-    var button = document.getElementById('neurotransito-install-button');
-    if (button) button.remove();
     installPrompt = null;
+    var button = document.getElementById('neurotransito-install-button');
+    if (button) { button.style.setProperty('display','flex','important'); button.style.setProperty('visibility','visible','important'); }
   });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupInstallButton);
   else setupInstallButton();
