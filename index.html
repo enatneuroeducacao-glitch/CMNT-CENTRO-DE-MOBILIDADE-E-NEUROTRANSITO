@@ -224,7 +224,7 @@ function svg(n){var d={home:'M3 10.5 12 3l9 7.5v9a1.5 1.5 0 0 1-1.5 1.5h-5v-6h-5
 
 function communityIcon(c){var n=((c&&c.name)||'').toLowerCase(),cat=((c&&c.category)||'').toLowerCase();var icon='🛡️';if(n.includes('instrutor'))icon='🎓';else if(n.includes('joinville')||cat.includes('município'))icon='🏙️';else if(n.includes('motocicl'))icon='🏍️';else if(cat.includes('mobilidade')||n.includes('mobilidade'))icon='🚦';else if(cat.includes('educação')||n.includes('educa'))icon='📚';return '<span class="community-avatar w-10 h-10 grid place-items-center shrink-0" aria-hidden="true" style="background:transparent!important"><span style="font-size:25px;line-height:1">'+icon+'</span></span>'}
 function nav(){var a=[['home','Início'],['search','Explorar'],['users','Comunidades'],['bell','Notificações'],['message','Mensagens'],['live','Ao vivo'],['bookmark','Salvos'],['user','Perfil'],['settings','Configurações'],['editorial','Painel editorial'],['cmnt','CMNT Científico']];return a.map(function(x){return'<button type="button" onclick="go(\''+x[0]+'\');return false" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-sm font-bold '+(S.tab===x[0]?'active':'text-slate-600 hover:bg-slate-50')+'">'+svg(x[0]==='live'?'radio':x[0])+'<span>'+x[1]+'</span></button>'}).join('')}
-function cmntOpenSponsorship(){
+async function cmntOpenSponsorship(){
  var modal=document.getElementById('modal');if(!modal)return;
  var profile=S.profile||{},email=(S.user&&S.user.email)||'';
  var plans=[
@@ -232,7 +232,7 @@ function cmntOpenSponsorship(){
   {id:'destaque',name:'Destaque',price:697,period:'mês',tag:'Mais visibilidade',features:['Benefícios do plano Presença','4 publicações patrocinadas por mês','Marca em destaque na área de parceiros','Relatório mensal de entregas']},
   {id:'master',name:'Master',price:1497,period:'mês',tag:'Máxima exposição',features:['Benefícios do plano Destaque','Patrocínio de 1 live por mês','Destaque institucional prioritário','Relatório mensal consolidado']}
  ];
- window.CMNT_SPONSOR_PLANS=plans;
+ try{var planResult=await db.from('enat_sponsorship_plans').select('id,name,monthly_price,tag,features,active,sort_order').eq('active',true).order('sort_order',{ascending:true});if(!planResult.error&&planResult.data&&planResult.data.length){plans=planResult.data.map(function(p){return{id:p.id,name:p.name,price:Number(p.monthly_price),period:'mês',tag:p.tag||'',features:Array.isArray(p.features)?p.features:[]}})}}catch(_e){}\n window.CMNT_SPONSOR_PLANS=plans;
  modal.innerHTML='<div class="fixed inset-0 modal z-[70] grid place-items-center p-3 sm:p-4" onclick="if(event.target===this)closeModal()">'+
  '<div class="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[94vh] overflow-auto">'+
  '<div class="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-slate-100 px-5 py-4 flex items-center justify-between gap-3">'+
