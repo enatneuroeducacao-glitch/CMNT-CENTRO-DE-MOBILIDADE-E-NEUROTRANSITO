@@ -207,6 +207,7 @@ body {
 <body>
 <div id="app"><div style="min-height:100vh;display:grid;place-items:center;background:#f4f7fa;font-family:system-ui,sans-serif"><div style="text-align:center;padding:30px"><div style="font-size:28px;font-weight:900;color:#07111f">ENAT</div><div style="margin-top:10px;color:#64748b">Carregando a rede social...</div></div></div></div><div id="modal"></div><div id="toast" class="fixed right-4 bottom-20 md:bottom-5 z-[90] space-y-2"></div>
 <script src="./editorial.js"></script>
+<script src="./commercial.js"></script>
 <script>
 const SUPABASE_URL='https://gicjsuagmiyoqvttbqjw.supabase.co';
 const KEY='sb_publishable_ovAAaIT0nXzSMiy2KYGHTw_ydsshEzK';
@@ -1297,6 +1298,7 @@ cmntBuildDefaultQuizzes();
 })();
 
 function cmntRenderContent(key){
+ if(key==="commercial"){setTimeout(function(){if(window.enatCommercialInit)window.enatCommercialInit()},0);return window.enatCommercialView?window.enatCommercialView():"<div class=\"card rounded-2xl p-5\">Módulo comercial indisponível.</div>"}
  var d=CMNT_SCI_SECTIONS[key]||CMNT_SCI_SECTIONS.overview;
  var html='<div class="space-y-4"><div class="brand text-white rounded-3xl p-6"><div class="text-xs uppercase tracking-[.2em] text-emerald-300 font-black">'+esc(d.kicker)+'</div><h2 class="text-3xl font-black mt-2">'+esc(d.title)+'</h2><p class="text-white/80 mt-3 leading-7 max-w-4xl">'+esc(d.intro)+'</p></div>';
  if(key==="nexus12"){
@@ -1333,7 +1335,7 @@ async function submitHSIDothP(){
  await cmntLog("hsi","result_viewed",{assessment_id:r.data&&r.data.id||null});
 }
 function cmntTabs(){
- var tabs=[["overview","Visão geral"],["research_lab","Laboratório de pesquisa"],["researcher","Pesquisador"],["evidence","Evidências"],["nexus12","NEXUS 12"],["hsi","HSI"],["academy","Academia ENAT"],["observatory","Observatório"],["events","Eventos"],["editorial","Editorial"],["scientific_communities","Comunidades científicas"],["institutions","Instituições"],["governance","Governança"],["knowledge_base","Base de conhecimento"],["neurodrive","NeuroDrive"],["scientific_ai","IA científica"]];
+ var tabs=[["overview","Visão geral"],["research_lab","Laboratório de pesquisa"],["researcher","Pesquisador"],["evidence","Evidências"],["nexus12","NEXUS 12"],["hsi","HSI"],["academy","Academia ENAT"],["observatory","Observatório"],["events","Eventos"],["editorial","Editorial"],["commercial","Parcerias comerciais"],["scientific_communities","Comunidades científicas"],["institutions","Instituições"],["governance","Governança"],["knowledge_base","Base de conhecimento"],["neurodrive","NeuroDrive"],["scientific_ai","IA científica"]];
  return '<div class="cmnt-tabs flex gap-2 flex-wrap mb-5">'+tabs.map(function(x){return'<button onclick="cmntTab(\''+x[0]+'\')" class="px-3 py-2 rounded-xl text-sm font-bold '+((S.cmntTab||"overview")===x[0]?"bg-emerald-100 text-emerald-800":"bg-white text-slate-600 border border-slate-200 hover:bg-slate-50")+'">'+x[1]+'</button>'}).join('')+'</div>';
 }
 function cmntTab(key){S.cmntTab=key;cmntLog(key,"tab_opened",{source:"cmnt_scientific_menu"});render()}
