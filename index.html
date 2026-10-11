@@ -1459,7 +1459,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
     button.type = 'button';
     button.textContent = '⬇ Instalar Neurotrânsito';
     button.setAttribute('aria-label', 'Instalar aplicativo Neurotrânsito');
-    button.style.cssText = 'position:fixed!important;right:max(14px,env(safe-area-inset-right,0px))!important;bottom:max(16px,env(safe-area-inset-bottom,0px))!important;z-index:2147483647!important;display:flex!important;visibility:visible!important;opacity:1!important;align-items:center;gap:8px;border:0;border-radius:999px;padding:14px 18px;background:#16b86a;color:#07111f;font:800 14px/1.2 system-ui,sans-serif;box-shadow:0 8px 28px rgba(0,0,0,.35);cursor:pointer;max-width:calc(100vw - 28px)';
+    button.style.cssText = 'position:fixed!important;right:max(14px,env(safe-area-inset-right,0px))!important;bottom:max(88px,calc(env(safe-area-inset-bottom,0px) + 76px))!important;z-index:2147483647!important;display:flex!important;visibility:visible!important;opacity:1!important;align-items:center;gap:8px;border:0;border-radius:999px;padding:14px 18px;background:#16b86a;color:#07111f;font:800 14px/1.2 system-ui,sans-serif;box-shadow:0 8px 28px rgba(0,0,0,.35);cursor:pointer;max-width:calc(100vw - 28px)';
     button.addEventListener('click', async function () {
       if (!installPrompt) { showInstructions(); return; }
       installPrompt.prompt();
@@ -1477,8 +1477,24 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
     var button = document.getElementById('neurotransito-install-button');
     if (button) { button.style.setProperty('display','flex','important'); button.style.setProperty('visibility','visible','important'); }
   });
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupInstallButton);
-  else setupInstallButton();
+  function ensureNeurotransitoButton() {
+    var b = document.getElementById('neurotransito-install-button');
+    if (!b) { setupInstallButton(); b = document.getElementById('neurotransito-install-button'); }
+    if (b) {
+      b.style.setProperty('position','fixed','important');
+      b.style.setProperty('right','14px','important');
+      b.style.setProperty('bottom','max(88px,calc(env(safe-area-inset-bottom,0px) + 76px))','important');
+      b.style.setProperty('z-index','2147483647','important');
+      b.style.setProperty('display','flex','important');
+      b.style.setProperty('visibility','visible','important');
+      b.style.setProperty('opacity','1','important');
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureNeurotransitoButton);
+  else ensureNeurotransitoButton();
+  window.addEventListener('pageshow', ensureNeurotransitoButton);
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible') ensureNeurotransitoButton(); });
+  new MutationObserver(ensureNeurotransitoButton).observe(document.documentElement,{childList:true,subtree:true});
 })();
 </script></body>
 </html>
