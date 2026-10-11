@@ -12,7 +12,7 @@ create table if not exists public.cmnt_admin_audit_log(
  metadata jsonb not null default '{}'::jsonb, created_at timestamptz not null default now());
 alter table public.cmnt_admin_users enable row level security;
 alter table public.cmnt_admin_audit_log enable row level security;
-create or replace function public.cmnt_is_admin() returns boolean language sql stable security definer set search_path='' as $
+create or replace function public.cmnt_is_admin() returns boolean language sql stable security definer set search_path='' as $$
  select exists(select 1 from public.cmnt_admin_users a where a.user_id=(select auth.uid()) and a.active=true)
  or coalesce((auth.jwt()->'app_metadata'->>'role') in ('admin','cmnt_admin','administrator'),false);
 $$;
@@ -24,7 +24,7 @@ drop policy if exists cmnt_admin_audit_admin on public.cmnt_admin_audit_log;
 create policy cmnt_admin_audit_admin on public.cmnt_admin_audit_log for select to authenticated using(public.cmnt_is_admin());
 drop policy if exists cmnt_admin_audit_insert on public.cmnt_admin_audit_log;
 create policy cmnt_admin_audit_insert on public.cmnt_admin_audit_log for insert to authenticated with check(actor_user_id=auth.uid() and public.cmnt_is_admin());
-create or replace function public.cmnt_sync_admin_email() returns trigger language plpgsql security definer set search_path='' as $
+create or replace function public.cmnt_sync_admin_email() returns trigger language plpgsql security definer set search_path='' as $$
 begin if new.email is null then select u.email into new.email from auth.users u where u.id=new.user_id; end if; return new; end $$;
 drop trigger if exists trg_cmnt_admin_email on public.cmnt_admin_users;
 create trigger trg_cmnt_admin_email before insert or update on public.cmnt_admin_users for each row execute function public.cmnt_sync_admin_email();
