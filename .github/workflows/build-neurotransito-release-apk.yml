@@ -58,8 +58,14 @@ jobs:
 
       - name: Verify APK signature
         run: |
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          APKSIGNER="$SDK_ROOT/build-tools/35.0.0/apksigner"
           APK="android-app/app/build/outputs/apk/release/app-release.apk"
-          apksigner verify --verbose --print-certs "$APK"
+          if [ ! -x "$APKSIGNER" ]; then
+            echo "::error::apksigner not found at $APKSIGNER"
+            exit 1
+          fi
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
           sha256sum "$APK"
 
       - name: Upload signed APK for review
