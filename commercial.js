@@ -6,10 +6,10 @@
   const esc = v => typeof window.esc === 'function' ? window.esc(String(v == null ? '' : v)) : String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const money = v => Number(v || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const say = (m,bad) => typeof window.toast === 'function' ? window.toast(m,!!bad) : alert(m);
-  const db = () => window.db;
+  const db = () => typeof dbClient !== 'undefined' ? dbClient : (typeof db !== 'undefined' ? db : null);
   const state = { partners:[], proposals:[], payments:[], campaigns:[], deliverables:[], section:'overview', loaded:false };
   const canAdmin = async () => {
-    if (!window.S || !S.user || !db()) return false;
+    if (typeof S === 'undefined' || !S.user || !db()) return false;
     const r = await db().rpc('cmnt_is_admin');
     return !r.error && r.data === true;
   };
@@ -19,7 +19,7 @@
   };
   async function load() {
     const root = document.getElementById('enatCommercialRoot'); if (!root) return;
-    if (!window.S || !S.user) { root.innerHTML='<div class="card rounded-2xl p-5">Entre na sua conta para acessar o painel comercial.</div>'; return; }
+    if (typeof S === 'undefined' || !S.user) { root.innerHTML='<div class="card rounded-2xl p-5">Entre na sua conta para acessar o painel comercial.</div>'; return; }
     let allowed=false; try { allowed=await canAdmin(); } catch (_) {}
     if (!allowed) { root.innerHTML='<div class="card rounded-2xl p-5"><h3 class="font-black text-lg">Acesso restrito</h3><p class="text-slate-600 mt-2">Somente administradores autorizados podem consultar dados comerciais.</p></div>'; return; }
     const tables = [
