@@ -1,5 +1,5 @@
 /* Neurotrânsito PWA — fallback offline explícito; não armazena dados do usuário. */
-const CACHE_NAME = "neurotransito-shell-v7";
+const CACHE_NAME = "neurotransito-shell-v8";
 const APP_SHELL = ["/offline.html", "/icons/neurotransito-icon-192.png?v=6", "/icons/neurotransito-icon-512.png?v=6", "/icons/neurotransito-icon-180.png?v=6"];
 
 self.addEventListener("install", (event) => {
