@@ -1,0 +1,46 @@
+plugins {
+    id 'com.android.application'
+}
+
+def keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+def keystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+def keyAliasValue = System.getenv("ANDROID_KEY_ALIAS")
+def keyPasswordValue = System.getenv("ANDROID_KEY_PASSWORD")
+
+android {
+    namespace 'com.enat.cmnt'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.enat.cmnt'
+        minSdk 24
+        targetSdk 35
+        versionCode 1
+        versionName '1.0.0'
+    }
+
+    signingConfigs {
+        release {
+            if (keystorePath && keystorePassword && keyAliasValue && keyPasswordValue) {
+                storeFile file(keystorePath)
+                storePassword keystorePassword
+                keyAlias keyAliasValue
+                keyPassword keyPasswordValue
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (keystorePath && keystorePassword && keyAliasValue && keyPasswordValue) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
