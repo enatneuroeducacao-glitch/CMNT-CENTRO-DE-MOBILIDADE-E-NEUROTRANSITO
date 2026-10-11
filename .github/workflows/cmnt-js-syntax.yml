@@ -18,6 +18,7 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check editorial.js
+          node --check commercial.js
           node --check cmnt-platform.js
           node --check cmnt-scientific.js
           node --check cmnt-observatory.js
