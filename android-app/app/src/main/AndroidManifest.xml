@@ -5,6 +5,7 @@
         android:allowBackup="false"
         android:usesCleartextTraffic="false"
         android:label="Neurotrânsito"
+        android:icon="@drawable/ic_launcher"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:supportsRtl="true">
         <activity
