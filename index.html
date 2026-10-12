@@ -826,6 +826,7 @@ async function toggleFollow(id){
       toast('Agora você está seguindo este perfil.');
       await notifyUser(id,'follow',(S.profile.display_name||'Alguém')+' começou a seguir você.');
     }
+    await refreshOwnFollowCounts();
     var p=await db.from('social_profiles').select('*').eq('id',id).maybeSingle();
     if(p.data){var fc=await db.from('social_follows').select('*',{count:'exact',head:true}).eq('following_id',id);var fg=await db.from('social_follows').select('*',{count:'exact',head:true}).eq('follower_id',id);var f=S.following.has(id);var b=document.getElementById('followProfileBtn');if(b){b.disabled=false;b.textContent=f?'Seguindo':'Seguir';b.className='px-5 py-2.5 '+(f?'bg-slate-100 text-slate-700':'bg-[#07111f] text-white')+' rounded-xl font-bold'}}
   }catch(e){if(btn)btn.disabled=false;toast('Não foi possível alterar o seguimento: '+(e.message||e),true)}
