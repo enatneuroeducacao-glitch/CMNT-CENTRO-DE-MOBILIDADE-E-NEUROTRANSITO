@@ -375,8 +375,9 @@ function startMessageVideoCall(){
  var room='ENAT-Neurotransito-'+Array.from(bytes).map(function(b){return b.toString(16).padStart(2,'0')}).join('');
  var url='https://meet.jit.si/'+room;
  var invite='Convite para videochamada ENAT: '+url+' — entre pelo link no horário combinado. Se não esperava este convite, confirme comigo antes de acessar.';
- var win=window.open(url,'_blank','noopener,noreferrer');
+ var win=window.open(url,'_blank');
  if(!win)return toast('O navegador bloqueou a nova janela. Permita pop-ups para abrir a videochamada.',true);
+ try{win.opener=null}catch(e){}
  db.from('social_messages').insert({sender_id:S.user.id,recipient_id:S_MSG.target,content:invite}).then(async function(r){if(r.error){console.warn('Falha ao enviar convite da videochamada',r.error);toast('A sala foi aberta, mas não foi possível enviar o convite automaticamente.',true);return}await notifyUser(S_MSG.target,'video_call','Você recebeu um convite para videochamada ENAT.');await openMessageThread(S_MSG.target);toast('Videochamada aberta e convite enviado.');});
 }
 
