@@ -71,6 +71,49 @@ html{line-height:1.5;-webkit-text-size-adjust:100%}body{margin:0}img,video{displ
 [class~="hover:bg-slate-50"]:hover{background:#f8fafc}[class~="hover:bg-slate-100"]:hover{background:#f1f5f9}[class~="hover:bg-slate-200"]:hover{background:#e2e8f0}
 [class~="hover:text-slate-700"]:hover{color:#334155}
 
+
+/* Ajustes responsivos do Neurotrânsito — correção focada em celulares */
+@media (max-width: 640px) {
+  html, body { width: 100%; max-width: 100%; overflow-x: clip; }
+  #main { min-width: 0; width: 100%; }
+  #cmntNotificationPanel {
+    position: fixed !important;
+    top: max(76px, env(safe-area-inset-top)) !important;
+    left: 10px !important;
+    right: 10px !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: calc(100dvh - 165px - env(safe-area-inset-top)) !important;
+    margin: 0 !important;
+    border-radius: 22px !important;
+    overflow: hidden !important;
+    z-index: 999 !important;
+  }
+  #cmntNotificationItems {
+    max-height: calc(100dvh - 285px - env(safe-area-inset-top)) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  #cmntNotificationPanel > .flex {
+    gap: 8px;
+    align-items: flex-start;
+  }
+  #cmntNotificationPanel h3 { font-size: 1.15rem; line-height: 1.4; }
+  #cmntNotificationPanel p { font-size: .9rem; line-height: 1.4; }
+  nav.fixed.bottom-0 { width: 100%; padding-left: max(4px, env(safe-area-inset-left)); padding-right: max(4px, env(safe-area-inset-right)); }
+  nav.fixed.bottom-0 .grid { gap: 2px; }
+  nav.fixed.bottom-0 button { min-width: 0; }
+  nav.fixed.bottom-0 button span { overflow-wrap: anywhere; }
+  #main h1 { overflow-wrap: anywhere; }
+  #main img, #main video { max-width: 100%; height: auto; }
+}
+@media (max-width: 380px) {
+  #cmntNotificationPanel { left: 6px !important; right: 6px !important; }
+  nav.fixed.bottom-0 { padding-left: 2px; padding-right: 2px; }
+  nav.fixed.bottom-0 button { padding-left: 2px; padding-right: 2px; }
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
