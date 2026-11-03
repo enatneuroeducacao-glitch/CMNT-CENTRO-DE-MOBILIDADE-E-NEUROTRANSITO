@@ -860,11 +860,28 @@ function cmntPublishRecording(id){
 }
 async function renderLiveRecordings(){
  var box=document.getElementById('liveRecordings');if(!box||!S.user)return;
- var r=await db.from('social_live_recordings').select('id,title,media_url,duration_seconds,status,created_at').eq('owner_user_id',S.user.id).neq('status','deleted').order('created_at',{ascending:false}).limit(20);
+ var r=await db.from('social_live_recordings').select('id,title,media_url,storage_path,duration_seconds,status,created_at').eq('owner_user_id',S.user.id).neq('status','deleted').order('created_at',{ascending:false}).limit(20);
  var rows=r.error?[]:(r.data||[]);
  box.innerHTML=rows.length?rows.map(function(x){
-   return '<div class="card rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3"><div><div class="font-black">🎬 '+esc(x.title)+'</div><div class="text-xs text-slate-500 mt-1">'+new Date(x.created_at).toLocaleString('pt-BR')+' · '+(x.duration_seconds||0)+'s · '+(x.status==='published'?'Publicado':'Pronto para publicar')+'</div></div><div class="flex gap-2"><a href="'+esc(x.media_url)+'" target="_blank" rel="noopener" class="px-3 py-2 rounded-xl bg-slate-100 font-bold">▶ Ver</a>'+(x.status!=='published'?'<button onclick="cmntPublishRecording(\''+x.id+'\')" class="px-3 py-2 rounded-xl bg-[#0b8b55] text-white font-bold">Publicar</button>':'')+'</div></div>'
+   return '<div class="card rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3"><div class="min-w-0"><div class="font-black break-words">🎬 '+esc(x.title)+'</div><div class="text-xs text-slate-500 mt-1">'+new Date(x.created_at).toLocaleString('pt-BR')+' · '+(x.duration_seconds||0)+'s · '+(x.status==='published'?'Publicado':'Pronto para publicar')+'</div></div><div class="flex flex-wrap gap-2"><a href="'+esc(x.media_url)+'" target="_blank" rel="noopener" class="px-3 py-2 rounded-xl bg-slate-100 font-bold">▶ Ver</a>'+(x.status!=='published'?'<button onclick="cmntPublishRecording(\''+x.id+'\')" class="px-3 py-2 rounded-xl bg-[#0b8b55] text-white font-bold">Publicar</button>':'')+'<button onclick="cmntDeleteRecording(\''+x.id+'\')" class="px-3 py-2 rounded-xl bg-red-50 text-red-700 font-bold">🗑 Excluir</button></div></div>'
  }).join(''):'<div class="text-sm text-slate-400">Nenhuma gravação salva ainda.</div>';
+}
+
+
+async function cmntDeleteRecording(id){
+ if(!S.user)return auth();
+ var r=await db.from('social_live_recordings').select('id,title,owner_user_id,storage_path,status,published_post_id').eq('id',id).eq('owner_user_id',S.user.id).maybeSingle();
+ if(r.error||!r.data)return toast('Gravação não encontrada ou sem permissão para excluí-la.',true);
+ var x=r.data;
+ if(!window.confirm('Excluir a gravação "'+String(x.title||'').replace(/"/g,'\\"')+'"?'+(x.status==='published'?'\nA publicação já compartilhada continuará na rede social.':'\nO arquivo de vídeo também será removido.')+'\nEsta ação não pode ser desfeita.'))return;
+ if(x.status!=='published'&&x.storage_path){
+   var removed=await db.storage.from('social-media').remove([x.storage_path]);
+   if(removed.error)return toast('Não foi possível excluir o arquivo da gravação: '+removed.error.message,true);
+ }
+ var del=await db.from('social_live_recordings').delete().eq('id',id).eq('owner_user_id',S.user.id);
+ if(del.error)return toast('Não foi possível excluir o registro da gravação: '+del.error.message,true);
+ toast(x.status==='published'?'Registro removido. A publicação compartilhada foi preservada.':'Gravação excluída.');
+ await renderLiveRecordings();
 }
 
 async function cmntDeleteLive(id){
