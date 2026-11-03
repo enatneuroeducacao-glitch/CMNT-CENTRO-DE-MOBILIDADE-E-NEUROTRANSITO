@@ -283,12 +283,12 @@ function nav(){var a=[['home','Início'],['search','Explorar'],['users','Comunid
 function cmntOpenSponsorship(){
  var modal=document.getElementById('modal');if(!modal)return;
  var profile=S.profile||{},email=(S.user&&S.user.email)||'';
- modal.innerHTML='<div class="fixed inset-0 modal z-[70] grid place-items-center p-4" onclick="if(event.target===this)closeModal()">'+
- '<div class="bg-white rounded-3xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-auto">'+
- '<div class="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-slate-100 px-5 py-4 flex items-center justify-between gap-3">'+
+ modal.innerHTML='<div class="modal" style="position:fixed;inset:0;z-index:100;display:grid;place-items:center;box-sizing:border-box;padding:16px;overflow-y:auto;background:rgba(15,23,42,.58);backdrop-filter:blur(5px)" onclick="if(event.target===this)closeModal()">'+
+ '<div style="position:relative;width:min(560px,calc(100vw - 32px));max-height:calc(100dvh - 32px);height:auto;box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.24);margin:auto">'+
+ '<div style="position:sticky;top:0;z-index:10;background:rgba(255,255,255,.97);backdrop-filter:blur(8px);border-bottom:1px solid #f1f5f9;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">'+
  '<div><div class="text-[9px] uppercase tracking-wider text-[#0b8b55] font-black">PARCERIAS ENAT</div><h2 class="text-xl font-black mt-0.5">Seja patrocinador</h2><p class="text-xs text-slate-500 mt-1">Apresente sua marca para a comunidade de trânsito, mobilidade e segurança.</p></div>'+
  '<button type="button" onclick="closeModal()" class="shrink-0 w-10 h-10 rounded-xl bg-slate-100 text-slate-500 text-2xl font-black">×</button></div>'+
- '<div class="p-5">'+
+ '<div style="padding:20px">'+
  '<div class="grid gap-3">'+
  '<div class="grid sm:grid-cols-2 gap-3"><div><label class="text-xs font-black text-slate-600">Nome *</label><input id="sponsorName" value="'+esc(profile.display_name||'')+'" class="w-full bg-slate-100 rounded-xl p-3 mt-1.5 text-sm" placeholder="Seu nome"></div><div><label class="text-xs font-black text-slate-600">Empresa / instituição</label><input id="sponsorCompany" class="w-full bg-slate-100 rounded-xl p-3 mt-1.5 text-sm" placeholder="Nome da organização"></div></div>'+
  '<div class="grid sm:grid-cols-2 gap-3"><div><label class="text-xs font-black text-slate-600">E-mail *</label><input id="sponsorEmail" type="email" value="'+esc(email)+'" class="w-full bg-slate-100 rounded-xl p-3 mt-1.5 text-sm" placeholder="voce@empresa.com"></div><div><label class="text-xs font-black text-slate-600">WhatsApp</label><input id="sponsorWhatsapp" class="w-full bg-slate-100 rounded-xl p-3 mt-1.5 text-sm" placeholder="(47) 99999-9999"></div></div>'+
