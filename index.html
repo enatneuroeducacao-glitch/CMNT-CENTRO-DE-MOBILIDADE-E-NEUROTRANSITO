@@ -454,7 +454,7 @@ async function comments(id){
  if(r.error)return toast('Não foi possível carregar os comentários.',true);
  var ids=[...new Set((r.data||[]).map(function(x){return x.author_id}).filter(Boolean))];
  var profiles={};
- if(ids.length){var pr=await db.from('social_profiles').select('id,display_name,username,avatar_url').in('id',ids);(pr.data||[]).forEach(function(x){profiles[x.id]=x})}
+ if(ids.length){var pr=await db.from('social_profiles').select('id,display_name,username,avatar_url').in('id',ids);await Promise.all((pr.data||[]).map(async function(x){x.avatar_url=await cmntSignedMedia(x.avatar_url);profiles[x.id]=x}))}
  var items=(r.data||[]).map(function(x){
    var p=profiles[x.author_id]||{};
    var mine=x.author_id===S.user.id;
@@ -569,7 +569,7 @@ async function loadRecentMessagePeople(){
  ids=Object.keys(recent);
  if(!ids.length){box.innerHTML='<div class="text-sm text-slate-400 p-3">Nenhuma conversa ainda. Busque uma pessoa para iniciar.</div>';S_MSG.profiles=[];return}
  var pr=await db.from('social_profiles').select('id,display_name,username,avatar_url,city,state').in('id',ids);
- var profiles=pr.error?[]:(pr.data||[]),byId={};profiles.forEach(function(p){byId[p.id]=p});
+ var profiles=pr.error?[]:(pr.data||[]);await Promise.all(profiles.map(async function(p){p.avatar_url=await cmntSignedMedia(p.avatar_url)}));var byId={};profiles.forEach(function(p){byId[p.id]=p});
  S_MSG.profiles=ids.map(function(id){return byId[id]||{id:id,display_name:'Membro',username:'membro'}});
  ids.sort(function(a,b){return new Date(recent[b].created_at)-new Date(recent[a].created_at)});
  box.innerHTML=ids.map(function(id){var p=byId[id]||{id:id,display_name:'Membro',username:'membro'},m=recent[id];return'<button onclick="openMessageThread(\''+id+'\')" class="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 text-left"><img src="'+av(p)+'" class="w-10 h-10 rounded-xl object-cover"><span class="min-w-0 flex-1"><b class="block truncate">'+esc(p.display_name||'Usuário')+'</b><small class="block truncate text-slate-500">'+esc(m.content.slice(0,70))+'</small></span>'+(m.unread?'<span class="rounded-full bg-emerald-600 text-white text-xs px-2 py-1">'+m.unread+'</span>':'')+'</button>'}).join('');
@@ -578,7 +578,7 @@ async function searchMessagePeople(term){
  var box=document.getElementById('msgPeople');if(!box)return;term=(term||'').trim();if(term.length<2){if(!term)return loadRecentMessagePeople();box.innerHTML='<div class="text-sm text-slate-400 p-3">Digite pelo menos 2 caracteres.</div>';return}
  var r=await db.from('social_profiles').select('id,display_name,username,avatar_url,city,state').neq('id',S.user.id).or('display_name.ilike.%'+term+'%,username.ilike.%'+term+'%').limit(12);
  if(r.error){box.innerHTML='<div class="text-sm text-red-600 p-3">'+esc(r.error.message)+'</div>';return}
- S_MSG.profiles=r.data||[];box.innerHTML=S_MSG.profiles.length?S_MSG.profiles.map(function(p){return'<button onclick="openMessageThread(\''+p.id+'\')" class="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 text-left"><img src="'+av(p)+'" class="w-10 h-10 rounded-xl object-cover"><span class="min-w-0"><b class="block truncate">'+esc(p.display_name||'Usuário')+'</b><small class="text-slate-500">@'+esc(p.username||'usuario')+'</small></span></button>'}).join(''):'<div class="text-sm text-slate-400 p-3">Nenhum perfil encontrado.</div>';
+ S_MSG.profiles=r.data||[];await Promise.all(S_MSG.profiles.map(async function(p){p.avatar_url=await cmntSignedMedia(p.avatar_url)}));box.innerHTML=S_MSG.profiles.length?S_MSG.profiles.map(function(p){return'<button onclick="openMessageThread(\''+p.id+'\')" class="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 text-left"><img src="'+av(p)+'" class="w-10 h-10 rounded-xl object-cover"><span class="min-w-0"><b class="block truncate">'+esc(p.display_name||'Usuário')+'</b><small class="text-slate-500">@'+esc(p.username||'usuario')+'</small></span></button>'}).join(''):'<div class="text-sm text-slate-400 p-3">Nenhum perfil encontrado.</div>';
 }
 async function openMessageThread(id){
  if(!S.user||!id)return;S_MSG.target=id;var p=S_MSG.profiles.find(function(x){return x.id===id});
@@ -621,8 +621,8 @@ function cmntLiveGuestSearch(){
    db.from('social_profiles').select('id,display_name,username,avatar_url').ilike('username','%'+q+'%').limit(8)
  ]).then(function(rs){
    if(seq!==CMNT_LIVE_FORM.searchSeq)return;
-   var map={};rs.forEach(function(r){(r.data||[]).forEach(function(x){if(x.id&&x.id!==S.user.id)map[x.id]=x})});
-   CMNT_LIVE_FORM.guestResults=Object.keys(map).map(function(id){return map[id]}).filter(function(x){return !CMNT_LIVE_FORM.guests.some(function(g){return g.id===x.id})}).slice(0,8);
+   var map={};rs.forEach(function(r){(r.data||[]).forEach(function(x){if(x.id&&x.id!==S.user.id)map[x.id]=x})});CMNT_LIVE_FORM.guestResults=await Promise.all(Object.keys(map).map(async function(id){var x=map[id];x.avatar_url=await cmntSignedMedia(x.avatar_url);return x}));
+   CMNT_LIVE_FORM.guestResults=CMNT_LIVE_FORM.guestResults.filter(function(x){return !CMNT_LIVE_FORM.guests.some(function(g){return g.id===x.id})}).slice(0,8);
    if(!CMNT_LIVE_FORM.guestResults.length){box.innerHTML='<div class="px-3 py-3 text-sm text-slate-500">Nenhum usuário encontrado.</div>';box.classList.remove('hidden');return}
    box.innerHTML=CMNT_LIVE_FORM.guestResults.map(function(x){
      return '<button type="button" class="w-full text-left px-3 py-3 hover:bg-slate-50 flex items-center gap-3" onclick="cmntSelectLiveGuest('+JSON.stringify(x.id)+')"><img src="'+esc(x.avatar_url||'https://api.dicebear.com/9.x/initials/svg?seed='+encodeURIComponent(x.display_name||x.username||'ENAT'))+'" class="w-9 h-9 rounded-xl object-cover"><span class="min-w-0"><b class="block truncate">'+esc(x.display_name||'Usuário')+'</b><small class="text-slate-500">@'+esc(x.username||'usuario')+'</small></span></button>';
