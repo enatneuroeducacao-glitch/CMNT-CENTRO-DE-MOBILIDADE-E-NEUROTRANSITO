@@ -1671,12 +1671,34 @@ async function cmntRunCalendarAlerts(identity){
  if(!S.user)return;
  var now=new Date(),today=cmntLocalDateKey(now),md=today.slice(5),alerts=[];
  var trafficDates={
+  '01-01':{slug:'confraternizacao-universal',title:'Confraternização Universal',message:'Novo ano, compromisso renovado com escolhas responsáveis e caminhos seguros.'},
+  '04-07':{slug:'dia-mundial-saude',title:'Dia Mundial da Saúde',message:'Saúde também é prevenir sinistros, proteger vidas e cuidar da mobilidade de todos.'},
+  '04-21':{slug:'dia-nacional-paz-transito',title:'Dia Nacional da Paz no Trânsito',message:'Promova a paz no trânsito com empatia, respeito às regras e cuidado com a vida.'},
   '05-01':{slug:'maio-amarelo',title:'Maio Amarelo',message:'Começa o Maio Amarelo: mês de conscientização para a segurança no trânsito.'},
-  '09-18':{slug:'semana-nacional-transito',title:'Semana Nacional do Trânsito',message:'Começa o período da Semana Nacional do Trânsito: promova atitudes seguras e responsáveis.'},
-  '09-25':{slug:'dia-nacional-transito',title:'dia-nacional-transito',message:'Hoje é o Dia Nacional do Trânsito. Reforce o respeito, a empatia e a segurança viária.'},
-  '06-03':{slug:'dia-mundial-bicicleta',title:'Dia Mundial da Bicicleta',message:'Dia Mundial da Bicicleta: valorize a mobilidade ativa e a convivência segura entre todos os usuários da via.'}
+  '05-05':{slug:'dia-mundial-transito',title:'Dia Mundial do Trânsito',message:'Reforce atitudes seguras e o respeito entre todos os usuários das vias.'},
+  '05-11':{slug:'dia-agente-transito-maio',title:'Dia do Agente de Trânsito',message:'Reconhecemos os agentes de trânsito que orientam, fiscalizam e contribuem para a segurança viária. A data pode variar conforme a legislação local.'},
+  '06-03':{slug:'dia-mundial-bicicleta',title:'Dia Mundial da Bicicleta',message:'Valorize a mobilidade ativa e a convivência segura entre ciclistas, pedestres e demais usuários da via.'},
+  '06-19':{slug:'lei-seca',title:'Aniversário da Lei Seca',message:'Reforce a mensagem: álcool e direção não combinam. Escolha sempre voltar em segurança.'},
+  '06-30':{slug:'dia-caminhoneiro-junho',title:'Dia do Caminhoneiro',message:'Nosso reconhecimento aos profissionais do transporte de cargas. Respeito e segurança em cada trajeto.'},
+  '07-11':{slug:'dia-socorrista',title:'Dia Nacional do Socorrista',message:'Homenageamos os socorristas que atuam para salvar vidas e atender emergências.'},
+  '07-25':{slug:'dia-motorista',title:'Dia do Motorista',message:'Parabéns aos motoristas. Direção responsável, atenção e respeito protegem vidas.'},
+  '07-27':{slug:'dia-motociclista',title:'Dia do Motociclista',message:'Valorize quem se desloca de motocicleta: atenção, visibilidade, equipamentos e respeito mútuo salvam vidas.'},
+  '08-08':{slug:'dia-pedestre',title:'Dia Nacional do Pedestre',message:'Todo deslocamento começa e termina a pé. Respeite as travessias e proteja quem caminha.'},
+  '08-19':{slug:'dia-ciclista',title:'Dia Nacional do Ciclista',message:'Mais respeito e distância segura para quem pedala. A via é compartilhada.'},
+  '09-16':{slug:'dia-caminhoneiro-setembro',title:'Dia Nacional do Caminhoneiro',message:'Reconhecemos os caminhoneiros e reforçamos a importância do descanso, da manutenção e da direção segura.'},
+  '09-18':{slug:'semana-nacional-transito',title:'Semana Nacional do Trânsito',message:'Começa a Semana Nacional do Trânsito (18 a 25 de setembro): promova atitudes seguras e responsáveis.'},
+  '09-22':{slug:'dia-mundial-sem-carro',title:'Dia Mundial Sem Carro',message:'Quando possível, experimente caminhar, pedalar ou usar transporte coletivo com segurança.'},
+  '09-23':{slug:'dia-agente-transito-setembro',title:'Reconhecimento aos Agentes de Trânsito',message:'Em diferentes localidades, 23 de setembro também é usado para homenagear agentes de trânsito e lembrar o Código de Trânsito Brasileiro.'},
+  '09-25':{slug:'dia-nacional-transito',title:'Dia Nacional do Trânsito',message:'Hoje é o Dia Nacional do Trânsito. Reforce o respeito, a empatia e a segurança viária.'},
+  '10-16':{slug:'dia-instrutor-transito',title:'Dia do Instrutor de Trânsito',message:'Nosso reconhecimento aos instrutores de trânsito, educadores que contribuem para a formação de condutores mais conscientes e seguros.'},
+  '11-24':{slug:'dia-taxista',title:'Dia Nacional do Taxista',message:'Parabéns aos taxistas. Que cada viagem seja marcada por profissionalismo, respeito e segurança.'},
+  '12-18':{slug:'rodovida',title:'Início da Operação Rodovida',message:'No período de maior movimento nas rodovias, planeje a viagem, respeite os limites e nunca dirija sob efeito de álcool.'}
  };
  if(trafficDates[md])alerts.push(trafficDates[md]);
+ // Datas móveis: terceiro domingo de novembro — Dia Mundial e Nacional em Memória/Mobilização pelas Vítimas do Trânsito.
+ if(now.getMonth()===10 && now.getDay()===0 && now.getDate()>=15 && now.getDate()<=21){
+  alerts.push({slug:'memoria-vitimas-transito',title:'Dia Mundial e Nacional em Memória das Vítimas do Trânsito',message:'Hoje é o terceiro domingo de novembro, dedicado à memória das vítimas do trânsito. Um momento de acolhimento às famílias e de compromisso coletivo para prevenir mortes e lesões nas vias.'});
+ }
  var birth=(identity&&identity.birth_date)||((S.user.user_metadata||{}).birth_date)||'';
  if(/^\d{4}-\d{2}-\d{2}$/.test(birth)&&birth.slice(5)===md){
   alerts.push({slug:'birthday',title:'Feliz aniversário!',message:'Feliz aniversário, '+((S.profile&&S.profile.display_name)||'')+'! A comunidade Rede Neurotrânsito deseja saúde, realizações e caminhos seguros.'});
