@@ -1677,7 +1677,7 @@ async function cmntRunCalendarAlerts(identity){
   '05-01':{slug:'maio-amarelo',title:'Maio Amarelo',message:'Começa o Maio Amarelo: mês de conscientização para a segurança no trânsito.'},
   '05-05':{slug:'dia-mundial-transito',title:'Dia Mundial do Trânsito',message:'Reforce atitudes seguras e o respeito entre todos os usuários das vias.'},
   '05-07':{slug:'dia-nacional-memoria-vitimas-transito',title:'Dia Nacional em Memória das Vítimas do Trânsito',message:'Data nacional dedicada à memória das vítimas do trânsito e à solidariedade com suas famílias. Transformar lembrança em prevenção é um compromisso de todos.'},
-  '05-11':{slug:'dia-agente-transito-maio',title:'Dia do Agente de Trânsito',message:'Reconhecemos os agentes de trânsito que orientam, fiscalizam e contribuem para a segurança viária. A data pode variar conforme a legislação local.'},
+  '05-11':{slug:'dia-nacional-agentes-transito',title:'Dia Nacional dos Agentes de Trânsito',message:'Data nacional instituída pela Lei nº 14.594/2023. Reconhecemos os agentes de trânsito que orientam, fiscalizam e contribuem para a segurança viária.'},
   '06-03':{slug:'dia-mundial-bicicleta',title:'Dia Mundial da Bicicleta',message:'Valorize a mobilidade ativa e a convivência segura entre ciclistas, pedestres e demais usuários da via.'},
   '06-19':{slug:'lei-seca',title:'Aniversário da Lei Seca',message:'Reforce a mensagem: álcool e direção não combinam. Escolha sempre voltar em segurança.'},
   '06-30':{slug:'dia-caminhoneiro-junho',title:'Dia do Caminhoneiro',message:'Nosso reconhecimento aos profissionais do transporte de cargas. Respeito e segurança em cada trajeto.'},
@@ -1696,9 +1696,9 @@ async function cmntRunCalendarAlerts(identity){
   '12-18':{slug:'rodovida',title:'Início da Operação Rodovida',message:'No período de maior movimento nas rodovias, planeje a viagem, respeite os limites e nunca dirija sob efeito de álcool.'}
  };
  if(trafficDates[md])alerts.push(trafficDates[md]);
- // Datas móveis: terceiro domingo de novembro — Dia Mundial e Nacional em Memória/Mobilização pelas Vítimas do Trânsito.
+ // Data móvel: terceiro domingo de novembro — Dia Mundial em Memória e Dia Nacional de Mobilização em Memória das Vítimas do Trânsito.
  if(now.getMonth()===10 && now.getDay()===0 && now.getDate()>=15 && now.getDate()<=21){
-  alerts.push({slug:'memoria-vitimas-transito',title:'Dia Mundial e Nacional em Memória das Vítimas do Trânsito',message:'Hoje é o terceiro domingo de novembro, dedicado à memória das vítimas do trânsito. Um momento de acolhimento às famílias e de compromisso coletivo para prevenir mortes e lesões nas vias.'});
+  alerts.push({slug:'memoria-vitimas-transito-novembro',title:'Dia Mundial em Memória das Vítimas do Trânsito',message:'Hoje é o terceiro domingo de novembro, reconhecido no CTB como Dia Mundial em Memória das Vítimas do Trânsito e instituído também como Dia Nacional de Mobilização em Memória das Vítimas de Trânsito. Um momento de acolhimento às famílias e de compromisso coletivo para prevenir mortes e lesões nas vias.'});
  }
  var birth=(identity&&identity.birth_date)||((S.user.user_metadata||{}).birth_date)||'';
  if(/^\d{4}-\d{2}-\d{2}$/.test(birth)&&birth.slice(5)===md){
