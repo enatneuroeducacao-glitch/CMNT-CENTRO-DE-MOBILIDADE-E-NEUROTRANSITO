@@ -640,7 +640,7 @@ function cmntLiveGuestSearch(){
  Promise.all([
    db.from('social_profiles').select('id,display_name,username,avatar_url').ilike('display_name','%'+q+'%').limit(8),
    db.from('social_profiles').select('id,display_name,username,avatar_url').ilike('username','%'+q+'%').limit(8)
- ]).then(function(rs){
+ ]).then(async function(rs){
    if(seq!==CMNT_LIVE_FORM.searchSeq)return;
    var map={};rs.forEach(function(r){(r.data||[]).forEach(function(x){if(x.id&&x.id!==S.user.id)map[x.id]=x})});CMNT_LIVE_FORM.guestResults=await Promise.all(Object.keys(map).map(async function(id){var x=map[id];x.avatar_url=await cmntSignedMedia(x.avatar_url);return x}));
    CMNT_LIVE_FORM.guestResults=CMNT_LIVE_FORM.guestResults.filter(function(x){return !CMNT_LIVE_FORM.guests.some(function(g){return g.id===x.id})}).slice(0,8);
