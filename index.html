@@ -316,64 +316,81 @@ async function resendSignupConfirmation(){
    if(btn){btn.disabled=false;btn.textContent='Reenviar confirmação'}
  }
 }
+var authSubmitting=false;
 async function doAuth(sign){
- var e=document.getElementById('ae').value.trim();
- var p=document.getElementById('ap').value;
- var n=document.getElementById('an').value.trim();
- if(!e)return toast('Informe seu e-mail.',true);
- if(p.length<6)return toast('A senha precisa ter pelo menos 6 caracteres.',true);
- if(sign){
-   var city=document.getElementById('acity').value.trim();
-   var state=document.getElementById('astate').value.trim().toUpperCase();
-   var birth=document.getElementById('abirth').value;
-   var credType=document.getElementById('acredType').value;
-   var cred=document.getElementById('acred').value.trim();
-   var respect=document.getElementById('arespect').checked;
-   var lgpd=document.getElementById('algpd').checked;
-   if(!n||!city||state.length!==2||!birth||!credType||!cred)return toast('Preencha todos os campos obrigatórios do cadastro.',true);
-   if(!respect)return toast('Você precisa aceitar o Compromisso de Respeito e Convivência.',true);
-   if(!lgpd)return toast('É necessário ler e aceitar o Aviso de Privacidade/LGPD.',true);
-   var bd=new Date(birth+'T00:00:00');
-   var now=new Date();
-   var age=now.getFullYear()-bd.getFullYear();
-   if(now.getMonth()<bd.getMonth()||(now.getMonth()===bd.getMonth()&&now.getDate()<bd.getDate()))age--;
-   if(age<18)return toast('O cadastro inicial do ENAT é destinado a maiores de 18 anos.',true);
-   if(bd>now)return toast('Data de nascimento inválida.',true);
-   var username=n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9_]/g,'');
-   var meta={
-     display_name:n,username:username,birth_date:birth,credential_type:credType,
-     credential_number:cred,lgpd_consent:true,community_guidelines_accepted:true,
-     privacy_policy_version:'1.0',city:city,state:state,enat_registration_version:'2'
-   };
-   var r=await db.auth.signUp({
-     email:e,password:p,
-     options:{data:meta,emailRedirectTo:window.location.origin+'/'}
-   });
-   if(r.error){
-     if(/already registered|already been registered|user exists/i.test(r.error.message||'')){
-       return toast('Este e-mail já possui cadastro. Entre na sua conta ou utilize “Esqueci minha senha”.',true);
+ if(authSubmitting)return;
+ var btn=document.getElementById('ab');
+ var originalText=btn?btn.textContent:'';
+ authSubmitting=true;
+ if(btn){btn.disabled=true;btn.textContent=sign?'Enviando cadastro...':'Entrando...';btn.classList.add('opacity-60','cursor-not-allowed')}
+ try{
+   var e=document.getElementById('ae').value.trim();
+   var p=document.getElementById('ap').value;
+   var n=document.getElementById('an').value.trim();
+   if(!e)return toast('Informe seu e-mail.',true);
+   if(p.length<6)return toast('A senha precisa ter pelo menos 6 caracteres.',true);
+   if(sign){
+     var city=document.getElementById('acity').value.trim();
+     var state=document.getElementById('astate').value.trim().toUpperCase();
+     var birth=document.getElementById('abirth').value;
+     var credType=document.getElementById('acredType').value;
+     var cred=document.getElementById('acred').value.trim();
+     var respect=document.getElementById('arespect').checked;
+     var lgpd=document.getElementById('algpd').checked;
+     if(!n||!city||state.length!==2||!birth||!credType||!cred)return toast('Preencha todos os campos obrigatórios do cadastro.',true);
+     if(!respect)return toast('Você precisa aceitar o Compromisso de Respeito e Convivência.',true);
+     if(!lgpd)return toast('É necessário ler e aceitar o Aviso de Privacidade/LGPD.',true);
+     var bd=new Date(birth+'T00:00:00');
+     var now=new Date();
+     var age=now.getFullYear()-bd.getFullYear();
+     if(now.getMonth()<bd.getMonth()||(now.getMonth()===bd.getMonth()&&now.getDate()<bd.getDate()))age--;
+     if(age<18)return toast('O cadastro inicial do ENAT é destinado a maiores de 18 anos.',true);
+     if(bd>now)return toast('Data de nascimento inválida.',true);
+     var username=n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9_]/g,'');
+     var meta={
+       display_name:n,username:username,birth_date:birth,credential_type:credType,
+       credential_number:cred,lgpd_consent:true,community_guidelines_accepted:true,
+       privacy_policy_version:'1.0',city:city,state:state,enat_registration_version:'2'
+     };
+     var r=await db.auth.signUp({
+       email:e,password:p,
+       options:{data:meta,emailRedirectTo:window.location.origin+'/'}
+     });
+     if(r.error){
+       if(/already registered|already been registered|user exists/i.test(r.error.message||'')){
+         toast('Este e-mail já possui cadastro. Entre na sua conta ou utilize “Reenviar confirmação de e-mail”.',true);
+         return;
+       }
+       toast('Não foi possível concluir o cadastro: '+(r.error.message||'erro não identificado.'),true);
+       return;
      }
-     return toast('Não foi possível concluir o cadastro: '+r.error.message,true);
-   }
-   if(r.data&&r.data.session){
-     closeModal();
-     try{await init();toast('Cadastro concluído. Seu acesso à rede está liberado.')}
-     catch(err){toast('Conta criada, mas houve um problema ao carregar o perfil. Entre novamente para concluir o acesso.',true)}
-     return;
-   }
-   showSignupConfirmation(e);
-   return;
- }
- var login=await db.auth.signInWithPassword({email:e,password:p});
- if(login.error){
-   if(login.error.code==='email_not_confirmed'||/email not confirmed/i.test(login.error.message||'')){
+     if(r.data&&r.data.session){
+       closeModal();
+       try{await init();toast('Cadastro concluído. Seu acesso à rede está liberado.')}
+       catch(err){toast('Conta criada, mas houve um problema ao carregar o perfil. Entre novamente para concluir o acesso.',true)}
+       return;
+     }
      showSignupConfirmation(e);
      return;
    }
-   return toast('Não foi possível entrar. Confira o e-mail e a senha ou utilize “Esqueci minha senha”.',true);
+   var login=await db.auth.signInWithPassword({email:e,password:p});
+   if(login.error){
+     if(login.error.code==='email_not_confirmed'||/email not confirmed/i.test(login.error.message||'')){
+       showSignupConfirmation(e);
+       return;
+     }
+     toast('Não foi possível entrar. Confira o e-mail e a senha ou utilize “Esqueci minha senha”.',true);
+     return;
+   }
+   closeModal();
+   await init();
+ }catch(err){
+   var msg=err&&err.message?err.message:String(err||'erro inesperado');
+   toast((sign?'Falha ao enviar o cadastro: ':'Falha ao entrar: ')+msg+' Verifique sua conexão e tente novamente.',true);
+ }finally{
+   authSubmitting=false;
+   if(btn){btn.disabled=false;btn.textContent=originalText|| (sign?'Cadastrar':'Entrar');btn.classList.remove('opacity-60','cursor-not-allowed')}
  }
- closeModal();
- await init();
 }
 async function requestPasswordRecovery(){var e=(document.getElementById('ae')&&document.getElementById('ae').value||'').trim();if(!e)return toast('Informe o e-mail da conta para receber o link de recuperação.',true);var b=document.getElementById('recoverPasswordBtn');if(b){b.disabled=true;b.textContent='Enviando...'}try{var r=await db.auth.resetPasswordForEmail(e,{redirectTo:window.location.origin+'/?recovery=1'});if(r.error)throw r.error;toast('Solicitação enviada. Verifique a caixa de entrada e o spam para redefinir a senha.');if(b){b.disabled=false;b.textContent='Esqueci minha senha'}}catch(err){if(b){b.disabled=false;b.textContent='Esqueci minha senha'}toast('Não foi possível enviar o link agora. Aguarde um pouco e tente novamente.',true)}}
 function showPasswordUpdate(){if(!db)return;document.getElementById('modal').innerHTML='<div class="fixed inset-0 modal z-[90] grid place-items-center p-4"><div class="bg-white rounded-3xl p-6 w-full max-w-md"><h2 class="text-2xl font-black">Criar nova senha</h2><p class="text-sm text-slate-500 mt-2">Defina uma nova senha para recuperar o acesso à conta existente.</p><input id="recoveryPass1" type="password" autocomplete="new-password" class="w-full p-3 bg-slate-100 rounded-xl mt-5" placeholder="Nova senha (mínimo 8 caracteres)"><input id="recoveryPass2" type="password" autocomplete="new-password" class="w-full p-3 bg-slate-100 rounded-xl mt-3" placeholder="Confirme a nova senha"><button id="recoverySaveBtn" onclick="saveRecoveredPassword()" class="w-full p-3 bg-[#0b8b55] text-white rounded-xl mt-4 font-black">Salvar nova senha</button></div></div>'}
